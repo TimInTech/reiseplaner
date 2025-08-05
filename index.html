@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reiseplaner</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Custom styles for better aesthetics and font */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 1rem; /* More rounded corners */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Softer shadow */
+            padding: 2rem;
+            max-width: 90%;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+        @media (min-width: 768px) {
+            .container {
+                flex-direction: row;
+                max-width: 1200px; /* Wider on larger screens */
+            }
+        }
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+        .input-group label {
+            font-weight: 600;
+            color: #374151; /* Darker gray for labels */
+        }
+        .input-group input {
+            border: 1px solid #d1d5db; /* Lighter border */
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+            width: 100%;
+            transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .input-group input:focus {
+            outline: none;
+            border-color: #4f46e5; /* Indigo focus border */
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); /* Indigo focus ring */
+        }
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1f2937; /* Darker title */
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid #e5e7eb; /* Subtle separator */
+            padding-bottom: 0.5rem;
+        }
+        .stats-card {
+            background-color: #f9fafb; /* Slightly different background for stats */
+            border-radius: 0.75rem;
+            padding: 1rem;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+        .stats-card p {
+            font-size: 1rem;
+            color: #4b5563;
+        }
+        .stats-card span {
+            font-weight: 700;
+            color: #1f2937;
+        }
+        .chart-container {
+            position: relative;
+            height: 300px; /* Fixed height for chart */
+            width: 100%;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px; /* Taller on desktop */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Input Section -->
+        <div class="w-full md:w-1/2 p-4">
+            <h1 class="section-title">Reiseplanung</h1>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Reisedauer -->
+                <div class="input-group">
+                    <label for="travelDuration" class="block text-sm mb-1">Reisedauer (Tage):</label>
+                    <input type="number" id="travelDuration" value="7" min="1" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+                </div>
+
+                <!-- Unterkunftskosten Gesamt -->
+                <div class="input-group">
+                    <label for="accommodationTotal" class="block text-sm mb-1">Unterkunftskosten (Gesamt):</label>
+                    <input type="number" id="accommodationTotal" value="0" min="0" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+                </div>
+
+                <!-- Unterkunftskosten pro Tag -->
+                <div class="input-group">
+                    <label for="accommodationPerDay" class="block text-sm mb-1">Unterkunftskosten (pro Tag):</label>
+                    <input type="number" id="accommodationPerDay" value="0" min="0" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+                    <p class="text-xs text-gray-500 mt-1">Wird ignoriert, wenn "Gesamt" > 0.</p>
+                </div>
+
+                <!-- Verpflegungskosten pro Tag -->
+                <div class="input-group">
+                    <label for="foodPerDay" class="block text-sm mb-1">Verpflegungskosten (pro Tag):</label>
+                    <input type="number" id="foodPerDay" value="50" min="0" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+                </div>
+
+                <!-- Bahnkosten Hinfahrt -->
+                <div class="input-group">
+                    <label for="trainCostOutward" class="block text-sm mb-1">Bahnkosten (Hinfahrt):</label>
+                    <input type="number" id="trainCostOutward" value="0" min="0" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+                </div>
+
+                <!-- Bahnkosten Rückfahrt -->
+                <div class="input-group">
+                    <label for="trainCostReturn" class="block text-sm mb-1">Bahnkosten (Rückfahrt):</label>
+                    <input type="number" id="trainCostReturn" value="0" min="0" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+                </div>
+
+                <!-- Sonstige Einmalkosten -->
+                <div class="input-group">
+                    <label for="otherOneTimeCosts" class="block text-sm mb-1">Sonstige Einmalkosten:</label>
+                    <input type="number" id="otherOneTimeCosts" value="0" min="0" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+                </div>
+
+                <!-- Anreisezeit Stunden -->
+                <div class="input-group">
+                    <label for="travelTimeOutward" class="block text-sm mb-1">Anreisezeit (Stunden):</label>
+                    <input type="number" id="travelTimeOutward" value="0" min="0" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+                </div>
+
+                <!-- Rückreisezeit Stunden -->
+                <div class="input-group">
+                    <label for="travelTimeReturn" class="block text-sm mb-1">Rückreisezeit (Stunden):</label>
+                    <input type="number" id="travelTimeReturn" value="0" min="0" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+                </div>
+            </div>
+        </div>
+
+        <!-- Output Section -->
+        <div class="w-full md:w-1/2 p-4">
+            <h2 class="section-title">Übersicht & Statistik</h2>
+
+            <!-- Summary Table -->
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold mb-2">Zusammenfassung der Kosten</h3>
+                <div class="overflow-x-auto rounded-lg shadow">
+                    <table class="min-w-full bg-white">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="py-2 px-4 text-left text-sm font-medium text-gray-600">Kategorie</th>
+                                <th class="py-2 px-4 text-left text-sm font-medium text-gray-600">Betrag</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="border-b">
+                                <td class="py-2 px-4 text-sm text-gray-800">Gesamtkosten Unterkunft:</td>
+                                <td class="py-2 px-4 text-sm text-gray-800" id="displayAccommodationTotal">0,00 €</td>
+                            </tr>
+                            <tr class="border-b">
+                                <td class="py-2 px-4 text-sm text-gray-800">Gesamtkosten Verpflegung:</td>
+                                <td class="py-2 px-4 text-sm text-gray-800" id="displayFoodTotal">0,00 €</td>
+                            </tr>
+                            <tr class="border-b">
+                                <td class="py-2 px-4 text-sm text-gray-800">Gesamte Bahnkosten:</td>
+                                <td class="py-2 px-4 text-sm text-gray-800" id="displayTrainTotal">0,00 €</td>
+                            </tr>
+                            <tr class="border-b">
+                                <td class="py-2 px-4 text-sm text-gray-800">Sonstige Einmalkosten:</td>
+                                <td class="py-2 px-4 text-sm text-gray-800" id="displayOtherTotal">0,00 €</td>
+                            </tr>
+                            <tr class="bg-indigo-50">
+                                <td class="py-2 px-4 text-sm font-semibold text-indigo-700">GESAMTKOSTEN:</td>
+                                <td class="py-2 px-4 text-sm font-semibold text-indigo-700" id="displayGrandTotal">0,00 €</td>
+                            </tr>
+                            <tr class="bg-indigo-50">
+                                <td class="py-2 px-4 text-sm font-semibold text-indigo-700">KOSTEN PRO TAG:</td>
+                                <td class="py-2 px-4 text-sm font-semibold text-indigo-700" id="displayCostPerDay">0,00 €</td>
+                            </tr>
+                            <tr class="bg-indigo-50">
+                                <td class="py-2 px-4 text-sm font-semibold text-indigo-700">GESAMTZEITAUFWAND:</td>
+                                <td class="py-2 px-4 text-sm font-semibold text-indigo-700" id="displayTotalTravelTime">0 Stunden</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Chart -->
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold mb-2">Kostenverteilung</h3>
+                <div class="chart-container">
+                    <canvas id="costChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Get references to all input elements
+        const travelDurationInput = document.getElementById('travelDuration');
+        const accommodationTotalInput = document.getElementById('accommodationTotal');
+        const accommodationPerDayInput = document.getElementById('accommodationPerDay');
+        const foodPerDayInput = document.getElementById('foodPerDay');
+        const trainCostOutwardInput = document.getElementById('trainCostOutward');
+        const trainCostReturnInput = document.getElementById('trainCostReturn');
+        const otherOneTimeCostsInput = document.getElementById('otherOneTimeCosts');
+        const travelTimeOutwardInput = document.getElementById('travelTimeOutward');
+        const travelTimeReturnInput = document.getElementById('travelTimeReturn');
+
+        // Get references to all display elements
+        const displayAccommodationTotal = document.getElementById('displayAccommodationTotal');
+        const displayFoodTotal = document.getElementById('displayFoodTotal');
+        const displayTrainTotal = document.getElementById('displayTrainTotal');
+        const displayOtherTotal = document.getElementById('displayOtherTotal');
+        const displayGrandTotal = document.getElementById('displayGrandTotal');
+        const displayCostPerDay = document.getElementById('displayCostPerDay');
+        const displayTotalTravelTime = document.getElementById('displayTotalTravelTime');
+
+        // Chart.js setup
+        let costChart;
+        const ctx = document.getElementById('costChart').getContext('2d');
+
+        // Function to format numbers as Euro currency
+        const formatCurrency = (amount) => {
+            return new Intl.NumberFormat('de-DE', {
+                style: 'currency',
+                currency: 'EUR',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(amount);
+        };
+
+        // Function to format time in hours
+        const formatTime = (hours) => {
+            return `${hours} Stunden`;
+        };
+
+        // Main calculation and update function
+        const calculateAndDisplay = () => {
+            // Get input values, convert to numbers, default to 0 if empty or invalid
+            const travelDuration = parseFloat(travelDurationInput.value) || 0;
+            const accommodationTotal = parseFloat(accommodationTotalInput.value) || 0;
+            const accommodationPerDay = parseFloat(accommodationPerDayInput.value) || 0;
+            const foodPerDay = parseFloat(foodPerDayInput.value) || 0;
+            const trainCostOutward = parseFloat(trainCostOutwardInput.value) || 0;
+            const trainCostReturn = parseFloat(trainCostReturnInput.value) || 0;
+            const otherOneTimeCosts = parseFloat(otherOneTimeCostsInput.value) || 0;
+            const travelTimeOutward = parseFloat(travelTimeOutwardInput.value) || 0;
+            const travelTimeReturn = parseFloat(travelTimeReturnInput.value) || 0;
+
+            // Calculate Accommodation Cost
+            let calculatedAccommodationTotal;
+            if (accommodationTotal > 0) {
+                // If total accommodation cost is provided, use it
+                calculatedAccommodationTotal = accommodationTotal;
+                // Optionally clear per-day field if total is used for clarity, but not strictly required by prompt
+                // accommodationPerDayInput.value = '';
+            } else {
+                // Otherwise, calculate from per-day cost
+                calculatedAccommodationTotal = accommodationPerDay * travelDuration;
+            }
+
+            // Calculate other costs
+            const calculatedFoodTotal = foodPerDay * travelDuration;
+            const calculatedTrainTotal = trainCostOutward + trainCostReturn;
+
+            // Calculate Grand Total
+            const grandTotal = calculatedAccommodationTotal + calculatedFoodTotal + calculatedTrainTotal + otherOneTimeCosts;
+
+            // Calculate Cost Per Day
+            const costPerDay = travelDuration > 0 ? grandTotal / travelDuration : 0;
+
+            // Calculate Total Travel Time
+            const totalTravelTime = travelTimeOutward + travelTimeReturn;
+
+            // Update display elements
+            displayAccommodationTotal.textContent = formatCurrency(calculatedAccommodationTotal);
+            displayFoodTotal.textContent = formatCurrency(calculatedFoodTotal);
+            displayTrainTotal.textContent = formatCurrency(calculatedTrainTotal);
+            displayOtherTotal.textContent = formatCurrency(otherOneTimeCosts);
+            displayGrandTotal.textContent = formatCurrency(grandTotal);
+            displayCostPerDay.textContent = formatCurrency(costPerDay);
+            displayTotalTravelTime.textContent = formatTime(totalTravelTime);
+
+            // Update Chart.js data
+            updateChart(calculatedAccommodationTotal, calculatedFoodTotal, calculatedTrainTotal, otherOneTimeCosts);
+        };
+
+        // Function to update the Chart.js graph/* */
+        const updateChart = (accommodation, food, train, other) => {
+            const data = {
+                labels: ['Unterkunft', 'Verpflegung', 'Bahn', 'Sonstiges'],
+                datasets: [{
+                    label: 'Kostenverteilung',
+                    data: [accommodation, food, train, other],
+                    backgroundColor: [
+                        'rgba(99, 102, 241, 0.7)', // Indigo
+                        'rgba(59, 130, 246, 0.7)', // Blue
+                        'rgba(16, 185, 129, 0.7)', // Emerald
+                        'rgba(245, 158, 11, 0.7)'  // Amber
+                    ],
+                    borderColor: [
+                        'rgba(99, 102, 241, 1)',
+                        'rgba(59, 130, 246, 1)',
+                        'rgba(16, 185, 129, 1)',
+                        'rgba(245, 158, 11, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            };
+
+            const options = {
+                responsive: true,
+                maintainAspectRatio: false, // Allow chart to fill container
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            font: {
+                                size: 14
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += formatCurrency(context.parsed.y);
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Kosten (€)',
+                            font: {
+                                size: 14
+                            }
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return formatCurrency(value);
+                            }
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Kategorie',
+                            font: {
+                                size: 14
+                            }
+                        }
+                    }
+                }
+            };
+
+            if (costChart) {
+                // If chart already exists, update its data
+                costChart.data = data;
+                costChart.options = options; // Update options too, in case responsiveness changes
+                costChart.update();
+            } else {
+                // Otherwise, create a new chart
+                costChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: data,
+                    options: options
+                });
+            }
+        };
+
+        // Add event listeners to all input fields
+        const allInputs = document.querySelectorAll('input[type="number"]');
+        allInputs.forEach(input => {
+            input.addEventListener('input', calculateAndDisplay);
+        });
+
+        // Initial calculation and display when the page loads
+        window.onload = () => {
+            calculateAndDisplay();
+        };
+    </script>
+</body>
+</html>
