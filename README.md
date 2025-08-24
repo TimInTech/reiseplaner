@@ -2,6 +2,18 @@ https://timintech.github.io/reiseplaner/
 
 
 
+
+```bat
+reg query "HKLM\SYSTEM\Setup\MoSetup" /v AllowUpgradesWithUnsupportedTPMOrCPU
+```
+
+```bat
+reg query "HKLM\SYSTEM\Setup\LabConfig"
+```
+
+
+
+
 reg query "HKLM\SYSTEM\Setup\MoSetup" /v AllowUpgradesWithUnsupportedTPMOrCPU
 reg query "HKLM\SYSTEM\Setup\LabConfig"
 
