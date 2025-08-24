@@ -1,6 +1,10 @@
 https://timintech.github.io/reiseplaner/
 
 
+
+reg add "HKLM\SYSTEM\Setup\MoSetup" /v AllowUpgradesWithUnsupportedTPMOrCPU /t REG_DWORD /d 1 /f
+
+
 ---
 
 # 🪟 Windows 11 – Einrichtung & Reparatur
