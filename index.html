@@ -1,416 +1,774 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reiseplaner</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Chart.js CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        /* Custom styles for better aesthetics and font */
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6; /* Light gray background */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 1rem;
-        }
-        .container {
-            background-color: #ffffff;
-            border-radius: 1rem; /* More rounded corners */
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Softer shadow */
-            padding: 2rem;
-            max-width: 90%;
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            gap: 2rem;
-        }
-        @media (min-width: 768px) {
-            .container {
-                flex-direction: row;
-                max-width: 1200px; /* Wider on larger screens */
-            }
-        }
-        input[type="number"]::-webkit-inner-spin-button,
-        input[type="number"]::-webkit-outer-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-        input[type="number"] {
-            -moz-appearance: textfield;
-        }
-        .input-group label {
-            font-weight: 600;
-            color: #374151; /* Darker gray for labels */
-        }
-        .input-group input {
-            border: 1px solid #d1d5db; /* Lighter border */
-            border-radius: 0.5rem;
-            padding: 0.75rem 1rem;
-            width: 100%;
-            transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-        }
-        .input-group input:focus {
-            outline: none;
-            border-color: #4f46e5; /* Indigo focus border */
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); /* Indigo focus ring */
-        }
-        .section-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #1f2937; /* Darker title */
-            margin-bottom: 1.5rem;
-            border-bottom: 2px solid #e5e7eb; /* Subtle separator */
-            padding-bottom: 0.5rem;
-        }
-        .stats-card {
-            background-color: #f9fafb; /* Slightly different background for stats */
-            border-radius: 0.75rem;
-            padding: 1rem;
-            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-        }
-        .stats-card p {
-            font-size: 1rem;
-            color: #4b5563;
-        }
-        .stats-card span {
-            font-weight: 700;
-            color: #1f2937;
-        }
-        .chart-container {
-            position: relative;
-            height: 300px; /* Fixed height for chart */
-            width: 100%;
-        }
-        @media (min-width: 768px) {
-            .chart-container {
-                height: 400px; /* Taller on desktop */
-            }
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Reiseplaner – erweitert</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #121935;
+      --muted: #97a0c3;
+      --text: #e7ecff;
+      --brand: #6ea8ff;
+      --brand-2: #8dffb3;
+      --warn: #ffd166;
+      --danger: #ff7b7b;
+      --ok: #6de39a;
+      --card: #161f3f;
+      --input: #0e1530;
+      --border: #25305c;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", sans-serif;
+      color: var(--text); background: radial-gradient(1200px 800px at 10% -10%, #17224a, transparent), var(--bg);
+    }
+    header { position: sticky; top: 0; z-index: 50; backdrop-filter: blur(8px); background: rgba(11,16,32,0.75); border-bottom: 1px solid var(--border); }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 18px 16px; }
+    h1 { font-size: 1.6rem; margin: 0; letter-spacing: .3px; }
+    .sub { color: var(--muted); font-size: .95rem; margin-top: 4px; }
+    main { padding: 24px 16px 80px; }
+    section { background: linear-gradient(180deg, #141c3b, #0f1632); border: 1px solid var(--border); border-radius: 16px; padding: 16px; margin: 14px auto; box-shadow: 0 6px 24px rgba(0,0,0,.25); }
+    section h2 { margin: 0 0 10px; font-size: 1.2rem; }
+    p.hint { color: var(--muted); margin: 4px 0 12px; }
+    .grid { display: grid; gap: 10px; }
+    .g2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .g3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .g4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .g6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+    @media (max-width: 880px){ .g6{grid-template-columns: repeat(3, minmax(0,1fr));} .g4{grid-template-columns: repeat(2, minmax(0,1fr));} }
+    @media (max-width: 560px){ .g3{grid-template-columns: repeat(1, minmax(0,1fr));} .g2{grid-template-columns: 1fr;} }
+
+    label { display: block; font-size: .85rem; color: var(--muted); margin-bottom: 6px; }
+    input[type="text"], input[type="number"], input[type="date"], input[type="time"], select, textarea {
+      width: 100%; padding: 10px 11px; border-radius: 12px; border: 1px solid var(--border);
+      background: var(--input); color: var(--text); outline: none; transition: border-color .15s;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(110,168,255,.16); }
+    textarea { min-height: 72px; resize: vertical; }
+
+    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 0; }
+    button { border: 1px solid var(--border); background: linear-gradient(180deg, #1a2451, #152049);
+      color: var(--text); padding: 10px 14px; border-radius: 12px; cursor: pointer; font-weight: 600;
+    }
+    button:hover { filter: brightness(1.05); }
+    .alt { background: linear-gradient(180deg, #153c2c, #0e2e22); border-color: #1a5d45; }
+    .warn { background: linear-gradient(180deg, #423208, #2f2306); border-color: #70551e; }
+    .ghost { background: transparent; }
+
+    .badge { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border); padding: 4px 10px; border-radius: 999px; font-size: .85rem; color: var(--muted); }
+    .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+    .kpi { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 12px; }
+    .kpi .label { color: var(--muted); font-size: .85rem; }
+    .kpi .value { font-size: 1.3rem; font-weight: 700; margin-top: 6px; }
+    .kpi .delta { font-size: .85rem; margin-top: 4px; }
+
+    .progress { height: 10px; border-radius: 999px; background: #0a0f22; border: 1px solid var(--border); overflow: hidden; }
+    .progress > i { display: block; height: 100%; background: linear-gradient(90deg, var(--brand), var(--brand-2)); width: 0%; transition: width .3s; }
+
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; border-bottom: 1px dashed var(--border); padding: 10px 6px; vertical-align: middle; }
+    thead th { font-size: .85rem; color: var(--muted); font-weight: 600; }
+    tbody tr:hover { background: rgba(255,255,255,.03); }
+    .num { text-align: right; white-space: nowrap; }
+
+    .row-actions { display: flex; gap: 6px; }
+    .link { color: var(--brand); text-decoration: none; border-bottom: 1px dashed rgba(110,168,255,.5); }
+    .right { margin-left: auto; }
+
+    footer { max-width: 1100px; margin: 40px auto; color: var(--muted); font-size: .85rem; padding: 0 16px 40px; }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Input Section -->
-        <div class="w-full md:w-1/2 p-4">
-            <h1 class="section-title">Reiseplanung</h1>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Reisedauer -->
-                <div class="input-group">
-                    <label for="travelDuration" class="block text-sm mb-1">Reisedauer (Tage):</label>
-                    <input type="number" id="travelDuration" value="7" min="1" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500">
-                </div>
-
-                <!-- Unterkunftskosten Gesamt -->
-                <div class="input-group">
-                    <label for="accommodationTotal" class="block text-sm mb-1">Unterkunftskosten (Gesamt):</label>
-                    <input type="number" id="accommodationTotal" value="0" min="0" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500">
-                </div>
-
-                <!-- Unterkunftskosten pro Tag -->
-                <div class="input-group">
-                    <label for="accommodationPerDay" class="block text-sm mb-1">Unterkunftskosten (pro Tag):</label>
-                    <input type="number" id="accommodationPerDay" value="0" min="0" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500">
-                    <p class="text-xs text-gray-500 mt-1">Wird ignoriert, wenn "Gesamt" > 0.</p>
-                </div>
-
-                <!-- Verpflegungskosten pro Tag -->
-                <div class="input-group">
-                    <label for="foodPerDay" class="block text-sm mb-1">Verpflegungskosten (pro Tag):</label>
-                    <input type="number" id="foodPerDay" value="50" min="0" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500">
-                </div>
-
-                <!-- Bahnkosten Hinfahrt -->
-                <div class="input-group">
-                    <label for="trainCostOutward" class="block text-sm mb-1">Bahnkosten (Hinfahrt):</label>
-                    <input type="number" id="trainCostOutward" value="0" min="0" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500">
-                </div>
-
-                <!-- Bahnkosten Rückfahrt -->
-                <div class="input-group">
-                    <label for="trainCostReturn" class="block text-sm mb-1">Bahnkosten (Rückfahrt):</label>
-                    <input type="number" id="trainCostReturn" value="0" min="0" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500">
-                </div>
-
-                <!-- Sonstige Einmalkosten -->
-                <div class="input-group">
-                    <label for="otherOneTimeCosts" class="block text-sm mb-1">Sonstige Einmalkosten:</label>
-                    <input type="number" id="otherOneTimeCosts" value="0" min="0" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500">
-                </div>
-
-                <!-- Anreisezeit Stunden -->
-                <div class="input-group">
-                    <label for="travelTimeOutward" class="block text-sm mb-1">Anreisezeit (Stunden):</label>
-                    <input type="number" id="travelTimeOutward" value="0" min="0" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500">
-                </div>
-
-                <!-- Rückreisezeit Stunden -->
-                <div class="input-group">
-                    <label for="travelTimeReturn" class="block text-sm mb-1">Rückreisezeit (Stunden):</label>
-                    <input type="number" id="travelTimeReturn" value="0" min="0" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500">
-                </div>
-            </div>
-        </div>
-
-        <!-- Output Section -->
-        <div class="w-full md:w-1/2 p-4">
-            <h2 class="section-title">Übersicht & Statistik</h2>
-
-            <!-- Summary Table -->
-            <div class="mb-6">
-                <h3 class="text-lg font-semibold mb-2">Zusammenfassung der Kosten</h3>
-                <div class="overflow-x-auto rounded-lg shadow">
-                    <table class="min-w-full bg-white">
-                        <thead class="bg-gray-100">
-                            <tr>
-                                <th class="py-2 px-4 text-left text-sm font-medium text-gray-600">Kategorie</th>
-                                <th class="py-2 px-4 text-left text-sm font-medium text-gray-600">Betrag</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr class="border-b">
-                                <td class="py-2 px-4 text-sm text-gray-800">Gesamtkosten Unterkunft:</td>
-                                <td class="py-2 px-4 text-sm text-gray-800" id="displayAccommodationTotal">0,00 €</td>
-                            </tr>
-                            <tr class="border-b">
-                                <td class="py-2 px-4 text-sm text-gray-800">Gesamtkosten Verpflegung:</td>
-                                <td class="py-2 px-4 text-sm text-gray-800" id="displayFoodTotal">0,00 €</td>
-                            </tr>
-                            <tr class="border-b">
-                                <td class="py-2 px-4 text-sm text-gray-800">Gesamte Bahnkosten:</td>
-                                <td class="py-2 px-4 text-sm text-gray-800" id="displayTrainTotal">0,00 €</td>
-                            </tr>
-                            <tr class="border-b">
-                                <td class="py-2 px-4 text-sm text-gray-800">Sonstige Einmalkosten:</td>
-                                <td class="py-2 px-4 text-sm text-gray-800" id="displayOtherTotal">0,00 €</td>
-                            </tr>
-                            <tr class="bg-indigo-50">
-                                <td class="py-2 px-4 text-sm font-semibold text-indigo-700">GESAMTKOSTEN:</td>
-                                <td class="py-2 px-4 text-sm font-semibold text-indigo-700" id="displayGrandTotal">0,00 €</td>
-                            </tr>
-                            <tr class="bg-indigo-50">
-                                <td class="py-2 px-4 text-sm font-semibold text-indigo-700">KOSTEN PRO TAG:</td>
-                                <td class="py-2 px-4 text-sm font-semibold text-indigo-700" id="displayCostPerDay">0,00 €</td>
-                            </tr>
-                            <tr class="bg-indigo-50">
-                                <td class="py-2 px-4 text-sm font-semibold text-indigo-700">GESAMTZEITAUFWAND:</td>
-                                <td class="py-2 px-4 text-sm font-semibold text-indigo-700" id="displayTotalTravelTime">0 Stunden</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Chart -->
-            <div class="mb-6">
-                <h3 class="text-lg font-semibold mb-2">Kostenverteilung</h3>
-                <div class="chart-container">
-                    <canvas id="costChart"></canvas>
-                </div>
-            </div>
-        </div>
+  <header>
+    <div class="wrap" style="display:flex; gap:14px; align-items: center;">
+      <div style="flex:1 1 auto">
+        <h1>Reiseplaner</h1>
+        <div class="sub">Budget, Tickets, Etappen und Kostenrechner für Auto, Bahn und Taxi</div>
+      </div>
+      <div class="badge" id="state-badge">Nicht gespeichert</div>
     </div>
+  </header>
 
-    <script>
-        // Get references to all input elements
-        const travelDurationInput = document.getElementById('travelDuration');
-        const accommodationTotalInput = document.getElementById('accommodationTotal');
-        const accommodationPerDayInput = document.getElementById('accommodationPerDay');
-        const foodPerDayInput = document.getElementById('foodPerDay');
-        const trainCostOutwardInput = document.getElementById('trainCostOutward');
-        const trainCostReturnInput = document.getElementById('trainCostReturn');
-        const otherOneTimeCostsInput = document.getElementById('otherOneTimeCosts');
-        const travelTimeOutwardInput = document.getElementById('travelTimeOutward');
-        const travelTimeReturnInput = document.getElementById('travelTimeReturn');
+  <main class="wrap">
+    <section>
+      <h2>Reisedaten</h2>
+      <div class="grid g4">
+        <div>
+          <label for="tripTitle">Titel</label>
+          <input id="tripTitle" type="text" placeholder="z. B. Berlin-Wochenende" />
+        </div>
+        <div>
+          <label for="tripStart">Startdatum</label>
+          <input id="tripStart" type="date" />
+        </div>
+        <div>
+          <label for="tripEnd">Enddatum</label>
+          <input id="tripEnd" type="date" />
+        </div>
+        <div>
+          <label for="currency">Währung</label>
+          <select id="currency">
+            <option value="EUR" selected>EUR €</option>
+            <option value="CHF">CHF</option>
+            <option value="USD">USD $</option>
+            <option value="GBP">GBP £</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid g4" style="margin-top:10px; align-items:end;">
+        <div>
+          <label for="budget">Budget gesamt</label>
+          <input id="budget" type="number" step="0.01" placeholder="0,00" />
+        </div>
+        <div>
+          <label for="participants">Personen</label>
+          <input id="participants" type="number" step="1" min="1" value="1" />
+        </div>
+        <div>
+          <label for="notes">Notizen</label>
+          <input id="notes" type="text" placeholder="optional" />
+        </div>
+        <div class="toolbar">
+          <button id="saveBtn">Speichern</button>
+          <button id="exportBtn" class="alt">Export JSON</button>
+          <button id="importBtn" class="ghost">Import JSON</button>
+          <input type="file" id="importFile" accept="application/json" style="display:none" />
+          <button id="resetBtn" class="warn">Zurücksetzen</button>
+        </div>
+      </div>
+      <div class="kpis" style="margin-top:12px;">
+        <div class="kpi">
+          <div class="label">Budget</div>
+          <div class="value" id="kpiBudget">€0,00</div>
+          <div class="progress"><i id="progBudget"></i></div>
+          <div class="delta" id="deltaBudget">verfügbar: €0,00</div>
+        </div>
+        <div class="kpi">
+          <div class="label">Fixkosten (Tickets & Co.)</div>
+          <div class="value" id="kpiFixed">€0,00</div>
+          <div class="delta" id="deltaFixed">bezahlt: €0,00 · offen: €0,00</div>
+        </div>
+        <div class="kpi">
+          <div class="label">Variable Kosten (Etappen & Sonstiges)</div>
+          <div class="value" id="kpiVar">€0,00</div>
+          <div class="delta" id="deltaVar">Auto €0,00 · Bahn €0,00 · Taxi €0,00 · Sonstiges €0,00</div>
+        </div>
+        <div class="kpi">
+          <div class="label">Gesamt</div>
+          <div class="value" id="kpiTotal">€0,00</div>
+          <div class="delta" id="deltaTotal">Budget-Abdeckung: 0%</div>
+        </div>
+      </div>
+    </section>
 
-        // Get references to all display elements
-        const displayAccommodationTotal = document.getElementById('displayAccommodationTotal');
-        const displayFoodTotal = document.getElementById('displayFoodTotal');
-        const displayTrainTotal = document.getElementById('displayTrainTotal');
-        const displayOtherTotal = document.getElementById('displayOtherTotal');
-        const displayGrandTotal = document.getElementById('displayGrandTotal');
-        const displayCostPerDay = document.getElementById('displayCostPerDay');
-        const displayTotalTravelTime = document.getElementById('displayTotalTravelTime');
+    <section>
+      <h2>Tickets & Fixkosten</h2>
+      <p class="hint">Für Konzerte, Eintritte, Hotels, bereits gekaufte Bahntickets, etc. Markiere „bereits bezahlt“, wenn die Ausgabe schon erfolgt ist. Diese Kosten zählen zum Budget.</p>
+      <div class="toolbar">
+        <button id="addFixed">+ Eintrag</button>
+        <button id="clearPaid" class="ghost">Bezahlte ausblenden/einblenden</button>
+      </div>
+      <div style="overflow:auto; margin-top:8px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Art</th>
+              <th>Beschreibung</th>
+              <th>Datum</th>
+              <th class="num">Preis</th>
+              <th>bezahlt</th>
+              <th>Notiz</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="fixedBody"></tbody>
+        </table>
+      </div>
+    </section>
 
-        // Chart.js setup
-        let costChart;
-        const ctx = document.getElementById('costChart').getContext('2d');
+    <section>
+      <h2>Etappen & Rechner</h2>
+      <p class="hint">Lege Fahrt- oder Reiseabschnitte an. Modus wählen, Daten eintragen, Kosten werden automatisch berechnet.</p>
+      <div class="toolbar">
+        <button id="addLeg">+ Etappe</button>
+        <button id="expandAll" class="ghost">Alle öffnen/schließen</button>
+      </div>
+      <div id="legs"></div>
+    </section>
 
-        // Function to format numbers as Euro currency
-        const formatCurrency = (amount) => {
-            return new Intl.NumberFormat('de-DE', {
-                style: 'currency',
-                currency: 'EUR',
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            }).format(amount);
-        };
+    <section>
+      <h2>Sonstige variable Kosten</h2>
+      <p class="hint">Alles, was nicht in Tickets oder Etappen steckt: Verpflegung, Parken, Souvenirs.</p>
+      <div class="toolbar">
+        <button id="addMisc">+ Position</button>
+      </div>
+      <div style="overflow:auto; margin-top:8px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Kategorie</th>
+              <th>Beschreibung</th>
+              <th>Datum</th>
+              <th class="num">Betrag</th>
+              <th>Notiz</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="miscBody"></tbody>
+        </table>
+      </div>
+    </section>
 
-        // Function to format time in hours
-        const formatTime = (hours) => {
-            return `${hours} Stunden`;
-        };
+    <section>
+      <h2>Zusammenfassung</h2>
+      <div class="grid g3">
+        <div>
+          <label>Budgetnutzung</label>
+          <div class="progress" style="margin-top:6px"><i id="progTotal"></i></div>
+        </div>
+        <div>
+          <label>Fixkosten-Anteil</label>
+          <div class="progress" style="margin-top:6px"><i id="progFixed"></i></div>
+        </div>
+        <div>
+          <label>Variable-Kosten-Anteil</label>
+          <div class="progress" style="margin-top:6px"><i id="progVar"></i></div>
+        </div>
+      </div>
+    </section>
+  </main>
 
-        // Main calculation and update function
-        const calculateAndDisplay = () => {
-            // Get input values, convert to numbers, default to 0 if empty or invalid
-            const travelDuration = parseFloat(travelDurationInput.value) || 0;
-            const accommodationTotal = parseFloat(accommodationTotalInput.value) || 0;
-            const accommodationPerDay = parseFloat(accommodationPerDayInput.value) || 0;
-            const foodPerDay = parseFloat(foodPerDayInput.value) || 0;
-            const trainCostOutward = parseFloat(trainCostOutwardInput.value) || 0;
-            const trainCostReturn = parseFloat(trainCostReturnInput.value) || 0;
-            const otherOneTimeCosts = parseFloat(otherOneTimeCostsInput.value) || 0;
-            const travelTimeOutward = parseFloat(travelTimeOutwardInput.value) || 0;
-            const travelTimeReturn = parseFloat(travelTimeReturnInput.value) || 0;
+  <footer>
+    <div>Hinweis: Taxitarife variieren je Stadt. Die Rechner bieten sensible Standardwerte, die du anpassen kannst. Alle Daten werden nur lokal im Browser gespeichert, bis du sie exportierst.</div>
+  </footer>
 
-            // Calculate Accommodation Cost
-            let calculatedAccommodationTotal;
-            if (accommodationTotal > 0) {
-                // If total accommodation cost is provided, use it
-                calculatedAccommodationTotal = accommodationTotal;
-                // Optionally clear per-day field if total is used for clarity, but not strictly required by prompt
-                // accommodationPerDayInput.value = '';
-            } else {
-                // Otherwise, calculate from per-day cost
-                calculatedAccommodationTotal = accommodationPerDay * travelDuration;
-            }
+  <template id="tmpl-fixed-row">
+    <tr>
+      <td>
+        <select class="f-type">
+          <option>Ticket</option>
+          <option>Hotel</option>
+          <option>Eintritt</option>
+          <option>Bahn</option>
+          <option>Sonstiges</option>
+        </select>
+      </td>
+      <td><input type="text" class="f-desc" placeholder="z. B. Konzert Rammstein" /></td>
+      <td><input type="date" class="f-date" /></td>
+      <td class="num"><input type="number" step="0.01" class="f-price" placeholder="0,00" /></td>
+      <td style="text-align:center"><input type="checkbox" class="f-paid" /></td>
+      <td><input type="text" class="f-note" placeholder="optional" /></td>
+      <td class="row-actions"><button class="ghost del">Löschen</button></td>
+    </tr>
+  </template>
 
-            // Calculate other costs
-            const calculatedFoodTotal = foodPerDay * travelDuration;
-            const calculatedTrainTotal = trainCostOutward + trainCostReturn;
+  <template id="tmpl-misc-row">
+    <tr>
+      <td>
+        <select class="m-cat">
+          <option>Verpflegung</option>
+          <option>Parken</option>
+          <option>Souvenir</option>
+          <option>ÖPNV</option>
+          <option>Sonstiges</option>
+        </select>
+      </td>
+      <td><input type="text" class="m-desc" placeholder="z. B. Abendessen" /></td>
+      <td><input type="date" class="m-date" /></td>
+      <td class="num"><input type="number" step="0.01" class="m-amt" placeholder="0,00" /></td>
+      <td><input type="text" class="m-note" placeholder="optional" /></td>
+      <td class="row-actions"><button class="ghost del">Löschen</button></td>
+    </tr>
+  </template>
 
-            // Calculate Grand Total
-            const grandTotal = calculatedAccommodationTotal + calculatedFoodTotal + calculatedTrainTotal + otherOneTimeCosts;
+  <template id="tmpl-leg">
+    <details class="leg" open>
+      <summary style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+        <span class="badge">Etappe</span>
+        <span class="leg-label" style="font-weight:700">–</span>
+        <span class="right badge" style="gap:8px;">
+          <span class="leg-mode-chip">Auto</span>
+          <span class="leg-cost">€0,00</span>
+        </span>
+      </summary>
+      <div class="grid g6" style="margin-top:12px;">
+        <div>
+          <label>Modus</label>
+          <select class="l-mode">
+            <option value="auto" selected>Auto</option>
+            <option value="bahn">Bahn</option>
+            <option value="taxi">Taxi</option>
+            <option value="fahrrad">Fahrrad</option>
+            <option value="fuss">Zu Fuß</option>
+            <option value="oepnv">ÖPNV</option>
+            <option value="flug">Flug</option>
+          </select>
+        </div>
+        <div>
+          <label>Start</label>
+          <input class="l-from" type="text" placeholder="z. B. Leopoldshöhe" />
+        </div>
+        <div>
+          <label>Ziel</label>
+          <input class="l-to" type="text" placeholder="z. B. Berlin" />
+        </div>
+        <div>
+          <label>Datum</label>
+          <input class="l-date" type="date" />
+        </div>
+        <div>
+          <label>Startzeit</label>
+          <input class="l-time-start" type="time" />
+        </div>
+        <div>
+          <label>Endzeit</label>
+          <input class="l-time-end" type="time" />
+        </div>
+      </div>
 
-            // Calculate Cost Per Day
-            const costPerDay = travelDuration > 0 ? grandTotal / travelDuration : 0;
+      <div class="card" style="margin-top:12px; padding:12px; border:1px solid var(--border); border-radius:12px; background: var(--card);">
+        <div class="auto-opts grid g6" style="display:none;">
+          <div>
+            <label>Distanz (km)</label>
+            <input class="a-km" type="number" step="0.1" placeholder="0" />
+          </div>
+          <div>
+            <label>Verbrauch (l/100km)</label>
+            <input class="a-cons" type="number" step="0.1" placeholder="6.5" />
+          </div>
+          <div>
+            <label>Kraftstoffpreis (€/l)</label>
+            <input class="a-price" type="number" step="0.01" placeholder="1.90" />
+          </div>
+          <div>
+            <label>Fahrweise</label>
+            <select class="a-style">
+              <option value="0.9">Eco</option>
+              <option value="1" selected>Normal</option>
+              <option value="1.1">Sport</option>
+            </select>
+          </div>
+          <div>
+            <label>Maut/Parken (€)</label>
+            <input class="a-extras" type="number" step="0.01" placeholder="0" />
+          </div>
+          <div>
+            <label>Notiz</label>
+            <input class="a-note" type="text" placeholder="optional" />
+          </div>
+        </div>
 
-            // Calculate Total Travel Time
-            const totalTravelTime = travelTimeOutward + travelTimeReturn;
+        <div class="bahn-opts grid g6" style="display:none;">
+          <div>
+            <label>Ticketpreis (€)</label>
+            <input class="b-price" type="number" step="0.01" placeholder="0,00" />
+          </div>
+          <div>
+            <label>Sitzplatzreservierung (€)</label>
+            <input class="b-seat" type="number" step="0.01" placeholder="0,00" />
+          </div>
+          <div>
+            <label>ÖPNV-Zubringer (€)</label>
+            <input class="b-local" type="number" step="0.01" placeholder="0,00" />
+          </div>
+          <div>
+            <label>Notiz</label>
+            <input class="b-note" type="text" placeholder="optional" />
+          </div>
+        </div>
 
-            // Update display elements
-            displayAccommodationTotal.textContent = formatCurrency(calculatedAccommodationTotal);
-            displayFoodTotal.textContent = formatCurrency(calculatedFoodTotal);
-            displayTrainTotal.textContent = formatCurrency(calculatedTrainTotal);
-            displayOtherTotal.textContent = formatCurrency(otherOneTimeCosts);
-            displayGrandTotal.textContent = formatCurrency(grandTotal);
-            displayCostPerDay.textContent = formatCurrency(costPerDay);
-            displayTotalTravelTime.textContent = formatTime(totalTravelTime);
+        <div class="taxi-opts grid g6" style="display:none;">
+          <div>
+            <label>Distanz (km)</label>
+            <input class="t-km" type="number" step="0.1" placeholder="0" />
+          </div>
+          <div>
+            <label>Dauer (min)</label>
+            <input class="t-min" type="number" step="1" placeholder="0" />
+          </div>
+          <div>
+            <label>Grundpreis (€)</label>
+            <input class="t-base" type="number" step="0.01" placeholder="4.00" />
+          </div>
+          <div>
+            <label>Preis/km (€)</label>
+            <input class="t-perkm" type="number" step="0.01" placeholder="2.40" />
+          </div>
+          <div>
+            <label>Wartezeit €/min</label>
+            <input class="t-permin" type="number" step="0.01" placeholder="0.50" />
+          </div>
+          <div>
+            <label>Notiz</label>
+            <input class="t-note" type="text" placeholder="optional" />
+          </div>
+        </div>
 
-            // Update Chart.js data
-            updateChart(calculatedAccommodationTotal, calculatedFoodTotal, calculatedTrainTotal, otherOneTimeCosts);
-        };
+        <div class="misc-opts grid g6" style="display:none;">
+          <div class="g3" style="grid-column: 1 / -1;">
+            <div>
+              <label>Kosten (€)</label>
+              <input class="m-amt" type="number" step="0.01" placeholder="0,00" />
+            </div>
+            <div>
+              <label>Kategorie</label>
+              <select class="m-cat">
+                <option>ÖPNV</option>
+                <option>Fahrrad</option>
+                <option>Zu Fuß</option>
+                <option>Flug</option>
+                <option>Sonstiges</option>
+              </select>
+            </div>
+            <div>
+              <label>Notiz</label>
+              <input class="m-note" type="text" placeholder="optional" />
+            </div>
+          </div>
+        </div>
 
-        // Function to update the Chart.js graph/* */
-        const updateChart = (accommodation, food, train, other) => {
-            const data = {
-                labels: ['Unterkunft', 'Verpflegung', 'Bahn', 'Sonstiges'],
-                datasets: [{
-                    label: 'Kostenverteilung',
-                    data: [accommodation, food, train, other],
-                    backgroundColor: [
-                        'rgba(99, 102, 241, 0.7)', // Indigo
-                        'rgba(59, 130, 246, 0.7)', // Blue
-                        'rgba(16, 185, 129, 0.7)', // Emerald
-                        'rgba(245, 158, 11, 0.7)'  // Amber
-                    ],
-                    borderColor: [
-                        'rgba(99, 102, 241, 1)',
-                        'rgba(59, 130, 246, 1)',
-                        'rgba(16, 185, 129, 1)',
-                        'rgba(245, 158, 11, 1)'
-                    ],
-                    borderWidth: 1
-                }]
-            };
+        <div style="display:flex; gap:8px; align-items:center; margin-top:10px; color: var(--muted);">
+          <span>Berechnete Kosten:</span>
+          <strong class="leg-total">€0,00</strong>
+          <span class="right"></span>
+          <button class="ghost del-leg">Etappe löschen</button>
+        </div>
+      </div>
+    </details>
+  </template>
 
-            const options = {
-                responsive: true,
-                maintainAspectRatio: false, // Allow chart to fill container
-                plugins: {
-                    legend: {
-                        position: 'top',
-                        labels: {
-                            font: {
-                                size: 14
-                            }
-                        }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                let label = context.dataset.label || '';
-                                if (label) {
-                                    label += ': ';
-                                }
-                                if (context.parsed.y !== null) {
-                                    label += formatCurrency(context.parsed.y);
-                                }
-                                return label;
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        title: {
-                            display: true,
-                            text: 'Kosten (€)',
-                            font: {
-                                size: 14
-                            }
-                        },
-                        ticks: {
-                            callback: function(value) {
-                                return formatCurrency(value);
-                            }
-                        }
-                    },
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Kategorie',
-                            font: {
-                                size: 14
-                            }
-                        }
-                    }
-                }
-            };
+  <script>
+    // ---------- Helpers ----------
+    const fmt = (n, cur = document.getElementById('currency')?.value || 'EUR') => {
+      try { return new Intl.NumberFormat('de-DE', { style: 'currency', currency: cur }).format(+n || 0); } catch { return (n||0).toFixed(2); }
+    };
+    const q = (sel, el = document) => el.querySelector(sel);
+    const qa = (sel, el = document) => Array.from(el.querySelectorAll(sel));
+    const val = (el) => +el.value || 0;
+    const show = (el, on) => el.style.display = on ? '' : 'none';
 
-            if (costChart) {
-                // If chart already exists, update its data
-                costChart.data = data;
-                costChart.options = options; // Update options too, in case responsiveness changes
-                costChart.update();
-            } else {
-                // Otherwise, create a new chart
-                costChart = new Chart(ctx, {
-                    type: 'bar',
-                    data: data,
-                    options: options
-                });
-            }
-        };
+    const currencyEl = q('#currency');
 
-        // Add event listeners to all input fields
-        const allInputs = document.querySelectorAll('input[type="number"]');
-        allInputs.forEach(input => {
-            input.addEventListener('input', calculateAndDisplay);
-        });
+    // ---------- Local Storage ----------
+    const KEY = 'reiseplaner_v2';
+    const saveBadge = q('#state-badge');
+    const markSaved = (txt = 'Gespeichert') => { saveBadge.textContent = txt; saveBadge.style.color = '#8dffb3'; };
+    const markDirty = () => { saveBadge.textContent = 'Nicht gespeichert'; saveBadge.style.color = '#ffd166'; };
 
-        // Initial calculation and display when the page loads
-        window.onload = () => {
-            calculateAndDisplay();
-        };
-    </script>
+    const serialize = () => {
+      return {
+        title: q('#tripTitle').value,
+        start: q('#tripStart').value,
+        end: q('#tripEnd').value,
+        currency: currencyEl.value,
+        budget: val(q('#budget')),
+        persons: val(q('#participants')) || 1,
+        notes: q('#notes').value,
+        fixed: qa('#fixedBody tr').map(tr => ({
+          type: q('.f-type', tr).value,
+          desc: q('.f-desc', tr).value,
+          date: q('.f-date', tr).value,
+          price: val(q('.f-price', tr)),
+          paid: q('.f-paid', tr).checked,
+          note: q('.f-note', tr).value
+        })),
+        legs: qa('#legs .leg').map(det => {
+          const mode = q('.l-mode', det).value;
+          return {
+            mode,
+            from: q('.l-from', det).value,
+            to: q('.l-to', det).value,
+            date: q('.l-date', det).value,
+            t1: q('.l-time-start', det).value,
+            t2: q('.l-time-end', det).value,
+            auto: {
+              km: val(q('.a-km', det)), cons: val(q('.a-cons', det)), price: val(q('.a-price', det)), style: +q('.a-style', det).value || 1, extras: val(q('.a-extras', det)), note: q('.a-note', det).value
+            },
+            bahn: { price: val(q('.b-price', det)), seat: val(q('.b-seat', det)), local: val(q('.b-local', det)), note: q('.b-note', det).value },
+            taxi: { km: val(q('.t-km', det)), min: val(q('.t-min', det)), base: val(q('.t-base', det))||4, perkm: val(q('.t-perkm', det))||2.4, permin: val(q('.t-permin', det))||0.5, note: q('.t-note', det).value },
+            misc: { amt: val(q('.m-amt', det)), cat: q('.m-cat', det).value, note: q('.m-note', det).value }
+          }
+        }),
+        misc: qa('#miscBody tr').map(tr => ({
+          cat: q('.m-cat', tr).value,
+          desc: q('.m-desc', tr).value,
+          date: q('.m-date', tr).value,
+          amt: val(q('.m-amt', tr)),
+          note: q('.m-note', tr).value
+        }))
+      };
+    };
+
+    const restore = (data) => {
+      q('#tripTitle').value = data.title || '';
+      q('#tripStart').value = data.start || '';
+      q('#tripEnd').value = data.end || '';
+      currencyEl.value = data.currency || 'EUR';
+      q('#budget').value = data.budget || '';
+      q('#participants').value = data.persons || 1;
+      q('#notes').value = data.notes || '';
+
+      q('#fixedBody').innerHTML = '';
+      (data.fixed || []).forEach(addFixedRow);
+
+      q('#legs').innerHTML = '';
+      (data.legs || []).forEach(addLeg);
+
+      q('#miscBody').innerHTML = '';
+      (data.misc || []).forEach(addMiscRow);
+
+      recalc();
+      markSaved();
+    };
+
+    const saveLS = () => { localStorage.setItem(KEY, JSON.stringify(serialize())); markSaved(); };
+
+    const loadLS = () => {
+      const raw = localStorage.getItem(KEY);
+      if (raw) try { restore(JSON.parse(raw)); } catch {}
+    };
+
+    // ---------- Fixed Rows ----------
+    const fixedBody = q('#fixedBody');
+    const fixedTmpl = q('#tmpl-fixed-row');
+
+    function addFixedRow(obj = {}){
+      const node = fixedTmpl.content.cloneNode(true);
+      const tr = node.querySelector('tr');
+      q('.f-type', tr).value = obj.type || 'Ticket';
+      q('.f-desc', tr).value = obj.desc || '';
+      q('.f-date', tr).value = obj.date || '';
+      q('.f-price', tr).value = obj.price ?? '';
+      q('.f-paid', tr).checked = !!obj.paid;
+      q('.f-note', tr).value = obj.note || '';
+      q('.del', tr).addEventListener('click', () => { tr.remove(); markDirty(); recalc(); });
+      fixedBody.appendChild(node);
+      tr.addEventListener('input', () => { markDirty(); recalc(); });
+      recalc();
+    }
+
+    // ---------- Misc Rows ----------
+    const miscBody = q('#miscBody');
+    const miscTmpl = q('#tmpl-misc-row');
+
+    function addMiscRow(obj = {}){
+      const node = miscTmpl.content.cloneNode(true);
+      const tr = node.querySelector('tr');
+      q('.m-cat', tr).value = obj.cat || 'Verpflegung';
+      q('.m-desc', tr).value = obj.desc || '';
+      q('.m-date', tr).value = obj.date || '';
+      q('.m-amt', tr).value = obj.amt ?? '';
+      q('.m-note', tr).value = obj.note || '';
+      q('.del', tr).addEventListener('click', () => { tr.remove(); markDirty(); recalc(); });
+      miscBody.appendChild(node);
+      tr.addEventListener('input', () => { markDirty(); recalc(); });
+      recalc();
+    }
+
+    // ---------- Legs ----------
+    const legsWrap = q('#legs');
+    const legTmpl = q('#tmpl-leg');
+
+    function addLeg(obj = {}){
+      const node = legTmpl.content.cloneNode(true);
+      const det = node.querySelector('details');
+      legsWrap.appendChild(node);
+
+      const modeEl = q('.l-mode', det);
+      const fromEl = q('.l-from', det);
+      const toEl   = q('.l-to', det);
+      const dateEl = q('.l-date', det);
+      const t1El   = q('.l-time-start', det);
+      const t2El   = q('.l-time-end', det);
+
+      const modeChip = q('.leg-mode-chip', det);
+      const label = q('.leg-label', det);
+      const totalEl = q('.leg-total', det);
+      const costChip = q('.leg-cost', det);
+
+      const autoBox = q('.auto-opts', det);
+      const bahnBox = q('.bahn-opts', det);
+      const taxiBox = q('.taxi-opts', det);
+      const miscBox = q('.misc-opts', det);
+
+      const auto = {
+        km: q('.a-km', det), cons: q('.a-cons', det), price: q('.a-price', det), style: q('.a-style', det), extras: q('.a-extras', det), note: q('.a-note', det)
+      };
+      const bahn = { price: q('.b-price', det), seat: q('.b-seat', det), local: q('.b-local', det), note: q('.b-note', det) };
+      const taxi = { km: q('.t-km', det), min: q('.t-min', det), base: q('.t-base', det), perkm: q('.t-perkm', det), permin: q('.t-permin', det), note: q('.t-note', det) };
+      const misc = { amt: q('.m-amt', det), cat: q('.m-cat', det), note: q('.m-note', det) };
+
+      function setModeUI(m){
+        show(autoBox, m==='auto');
+        show(bahnBox, m==='bahn');
+        show(taxiBox, m==='taxi');
+        show(miscBox, ['fahrrad','fuss','oepnv','flug'].includes(m));
+        modeChip.textContent = m.charAt(0).toUpperCase() + m.slice(1);
+      }
+
+      function legCost(){
+        const cur = currencyEl.value;
+        let cost = 0, kind = '';
+        const m = modeEl.value;
+        if (m==='auto'){
+          const km = val(auto.km), cons = val(auto.cons), price = val(auto.price), style = +auto.style.value || 1, extras = val(auto.extras);
+          const liters = km * (cons/100) * style;
+          cost = liters * price + extras;
+          kind = 'Auto';
+        } else if (m==='bahn'){
+          cost = val(bahn.price) + val(bahn.seat) + val(bahn.local);
+          kind = 'Bahn';
+        } else if (m==='taxi'){
+          cost = val(taxi.base) + (val(taxi.km) * val(taxi.perkm)) + (val(taxi.min) * val(taxi.permin));
+          kind = 'Taxi';
+        } else {
+          cost = val(misc.amt);
+          kind = 'Sonstiges';
+        }
+        totalEl.textContent = fmt(cost, cur);
+        costChip.textContent = fmt(cost, cur);
+        label.textContent = `${fromEl.value || '–'} → ${toEl.value || '–'} (${kind})`;
+        recalc();
+      }
+
+      // hydrate from obj
+      modeEl.value = obj.mode || 'auto';
+      fromEl.value = obj.from || '';
+      toEl.value = obj.to || '';
+      dateEl.value = obj.date || '';
+      t1El.value = obj.t1 || '';
+      t2El.value = obj.t2 || '';
+
+      if (obj.auto){ auto.km.value = obj.auto.km || ''; auto.cons.value = obj.auto.cons || ''; auto.price.value = obj.auto.price || ''; auto.style.value = obj.auto.style || '1'; auto.extras.value = obj.auto.extras || ''; auto.note.value = obj.auto.note || ''; }
+      if (obj.bahn){ bahn.price.value = obj.bahn.price || ''; bahn.seat.value = obj.bahn.seat || ''; bahn.local.value = obj.bahn.local || ''; bahn.note.value = obj.bahn.note || ''; }
+      if (obj.taxi){ taxi.km.value = obj.taxi.km || ''; taxi.min.value = obj.taxi.min || ''; taxi.base.value = obj.taxi.base || '4'; taxi.perkm.value = obj.taxi.perkm || '2.4'; taxi.permin.value = obj.taxi.permin || '0.5'; taxi.note.value = obj.taxi.note || ''; }
+      if (obj.misc){ misc.amt.value = obj.misc.amt || ''; misc.cat.value = obj.misc.cat || 'Sonstiges'; misc.note.value = obj.misc.note || ''; }
+
+      setModeUI(modeEl.value);
+      legCost();
+
+      det.addEventListener('input', () => { markDirty(); legCost(); });
+      modeEl.addEventListener('change', () => { setModeUI(modeEl.value); legCost(); });
+      q('.del-leg', det).addEventListener('click', () => { det.remove(); markDirty(); recalc(); });
+    }
+
+    // ---------- Recalc Dashboard ----------
+    function recalc(){
+      const data = serialize();
+      const cur = data.currency || 'EUR';
+      const budget = +data.budget || 0;
+
+      const fixedTotal = data.fixed.reduce((s,x)=>s + (+x.price||0),0);
+      const fixedPaid = data.fixed.filter(x=>x.paid).reduce((s,x)=>s + (+x.price||0),0);
+      const fixedOpen = fixedTotal - fixedPaid;
+
+      let autoCost = 0, bahnCost = 0, taxiCost = 0, otherLeg = 0;
+      data.legs.forEach(l => {
+        if (l.mode==='auto'){
+          const liters = l.auto.km * (l.auto.cons/100) * (l.auto.style||1);
+          autoCost += liters * l.auto.price + l.auto.extras;
+        } else if (l.mode==='bahn'){
+          bahnCost += l.bahn.price + l.bahn.seat + l.bahn.local;
+        } else if (l.mode==='taxi'){
+          taxiCost += l.taxi.base + (l.taxi.km * l.taxi.perkm) + (l.taxi.min * l.taxi.permin);
+        } else {
+          otherLeg += l.misc.amt;
+        }
+      });
+
+      const miscTotal = data.misc.reduce((s,x)=>s + (+x.amt||0),0);
+      const varTotal = autoCost + bahnCost + taxiCost + otherLeg + miscTotal;
+      const grand = fixedTotal + varTotal;
+
+      // KPIs
+      q('#kpiBudget').textContent = fmt(budget, cur);
+      q('#kpiFixed').textContent = fmt(fixedTotal, cur);
+      q('#deltaFixed').textContent = `bezahlt: ${fmt(fixedPaid,cur)} · offen: ${fmt(fixedOpen,cur)}`;
+      q('#kpiVar').textContent = fmt(varTotal, cur);
+      q('#deltaVar').textContent = `Auto ${fmt(autoCost,cur)} · Bahn ${fmt(bahnCost,cur)} · Taxi ${fmt(taxiCost,cur)} · Sonstiges ${fmt(otherLeg+miscTotal,cur)}`;
+      q('#kpiTotal').textContent = fmt(grand, cur);
+      const cover = budget ? Math.min(100, Math.round((grand / budget) * 100)) : 0;
+      q('#deltaTotal').textContent = `Budget-Abdeckung: ${cover}%`;
+
+      // progress bars
+      q('#progBudget').style.width = budget? '100%' : '0%';
+      q('#progTotal').style.width = budget? `${Math.min(100, (grand/budget)*100)}%` : '0%';
+      q('#progFixed').style.width = grand? `${Math.min(100, (fixedTotal/grand)*100)}%` : '0%';
+      q('#progVar').style.width = grand? `${Math.min(100, (varTotal/grand)*100)}%` : '0%';
+
+      // budget delta text
+      const left = budget - grand;
+      q('#deltaBudget').textContent = `verfügbar: ${fmt(left,cur)}`;
+      q('#progBudget').style.background = left >= 0 ? 'linear-gradient(90deg, var(--brand), var(--brand-2))' : 'linear-gradient(90deg, var(--danger), var(--warn))';
+    }
+
+    // ---------- Buttons ----------
+    q('#addFixed').addEventListener('click', ()=>{ addFixedRow(); markDirty(); });
+    q('#addLeg').addEventListener('click', ()=>{ addLeg(); markDirty(); });
+    q('#addMisc').addEventListener('click', ()=>{ addMiscRow(); markDirty(); });
+
+    q('#clearPaid').addEventListener('click', ()=>{
+      qa('#fixedBody tr').forEach(tr => {
+        const paid = q('.f-paid', tr).checked; tr.style.display = paid && tr.style.display !== 'none' ? 'none' : '';
+      })
+    });
+
+    q('#expandAll').addEventListener('click', ()=>{
+      const all = qa('#legs details');
+      const openCount = all.filter(x=>x.open).length;
+      const to = openCount < all.length; // open if not all open
+      all.forEach(x=> x.open = to);
+    });
+
+    q('#saveBtn').addEventListener('click', saveLS);
+    q('#exportBtn').addEventListener('click', ()=>{
+      const blob = new Blob([JSON.stringify(serialize(), null, 2)], {type:'application/json'});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+      a.download = 'reiseplaner_export.json'; a.click(); URL.revokeObjectURL(a.href);
+    });
+
+    const importFile = q('#importFile');
+    q('#importBtn').addEventListener('click', ()=> importFile.click());
+    importFile.addEventListener('change', async (e)=>{
+      const file = e.target.files?.[0]; if(!file) return;
+      const text = await file.text();
+      try { const data = JSON.parse(text); restore(data); markSaved('Importiert & gespeichert'); saveLS(); }
+      catch { alert('Ungültige JSON-Datei'); }
+    });
+
+    q('#resetBtn').addEventListener('click', ()=>{
+      if(!confirm('Alle Eingaben löschen?')) return;
+      localStorage.removeItem(KEY);
+      location.reload();
+    });
+
+    // mark dirty on any input
+    document.addEventListener('input', (e)=>{
+      if (e.target.closest('header')) return; // ignore header stray
+      markDirty();
+    }, true);
+
+    // ---------- Boot ----------
+    window.addEventListener('DOMContentLoaded', ()=>{
+      loadLS();
+      if(!localStorage.getItem(KEY)){
+        // sensible Defaults for quick demo
+        addFixedRow({type:'Ticket', desc:'Konzert', price:99, paid:true});
+        addFixedRow({type:'Hotel', desc:'2 Nächte', price:180, paid:false});
+        addLeg({ mode:'auto', from:'Leopoldshöhe', to:'Hannover', auto:{ km:100, cons:6.8, price:1.9, style:1, extras:5 }});
+        addLeg({ mode:'bahn', from:'Hannover', to:'Berlin', bahn:{ price:39.9, seat:4.9, local:0 }});
+        addLeg({ mode:'taxi', from:'Hbf', to:'Hotel', taxi:{ km:5, min:12, base:4, perkm:2.4, permin:0.5 }});
+        addMiscRow({cat:'Verpflegung', desc:'Snacks', amt:12});
+        q('#budget').value = 500;
+        recalc();
+        markDirty();
+      } else {
+        recalc();
+      }
+    });
+  </script>
 </body>
 </html>
