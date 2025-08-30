@@ -1,17 +1,16 @@
 # 🧳 Reiseplaner
 
-Der Reiseplaner ist ein schlankes, interaktives Tool zur schnellen Reise-Kalkulation mit klarer Kostenübersicht und einfacher Grafik. Links trägst du Reisedauer und Kosten ein, rechts siehst du sofort Gesamtkosten, Kosten pro Tag, Gesamtzeitaufwand und eine Balkengrafik der Verteilung.
-
-[👉 Live-Demo öffnen](https://timintech.github.io/reiseplaner/)
+Schlankes, lokales Planungstool für Budget, Tickets/Fixkosten, Etappen und variable Kosten. Unterstützt mehrere Verkehrsmittel, Währungswahl und JSON-Export/Import. Live-Demo: https://timintech.github.io/reiseplaner/
 
 [![Reiseplaner – Demo-Screenshot](Bildschirmfoto_30-8-2025_232128_timintech.github.io.png)](https://timintech.github.io/reiseplaner/ "Zur Live-Demo")
 
 ---
-
-## Funktionen in Kürze
-
-Eingaben: Reisedauer (Tage), Unterkunft gesamt oder pro Tag, Verpflegung pro Tag, Bahnkosten (Hin-/Rückfahrt), sonstige Einmalkosten, An- und Rückreisezeit in Stunden.  
-Ausgaben: Gesamtkosten, Kosten pro Tag, Gesamtzeitaufwand in Stunden, tabellarische Übersicht und Balkendiagramm.
+## Features
+1. Reisedaten: Titel, Datum, Währung (EUR/CHF/USD/GBP), Budget, Personen, Notizen. Speicherung lokal im Browser, Export/Import als JSON.
+2. Tickets & Fixkosten: Konzerte, Eintritte, Hotels, Bahntickets mit „bereits bezahlt“-Markierung und Filter. Zählen voll ins Budget.
+3. Etappen & Rechner: Auto, Bahn, Taxi, Fahrrad, Zu Fuß, ÖPNV, Flug – automatische Kostenberechnung je nach Parametern.
+4. Fahrmodus-Details: Auto (Distanz, Verbrauch l/100 km, Preis €/l, Fahrweise, Maut/Parken), Bahn (Ticketpreis, Reservierung, Zubringer), Taxi (Distanz, Dauer, Grundpreis, €/km, Wartezeit €/min).
+5. Überblick: Zusammenfassung mit Budgetnutzung und Anteilen von Fix- und variablen Kosten, inkl. visueller Darstellung.
 
 ---
 
@@ -30,7 +29,16 @@ Ausgaben: Gesamtkosten, Kosten pro Tag, Gesamtzeitaufwand in Stunden, tabellaris
 ## Nutzung lokal
 
 1) Repository klonen.
+
 ```bash
 cd ~
 git clone https://github.com/TimInTech/reiseplaner.git
 cd reiseplaner
+xdg-open index.html  # oder im Browser per Doppelklick öffnen
+```
+
+Daten sichern/wiederherstellen: In der App „Export JSON“ bzw. „Import JSON“ nutzen.
+
+Hinweise
+
+Alle Daten verbleiben lokal im Browser bis zum Export. Parameter (z. B. Kraftstoffpreis, Verbrauch, Tarife) sind anpassbar und dienen als sinnvolle Standardwerte; lokale Gegebenheiten können abweichen.
