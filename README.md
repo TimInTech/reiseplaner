@@ -4,7 +4,7 @@ Der Reiseplaner ist ein schlankes, interaktives Tool zur schnellen Reise-Kalkula
 
 [👉 Live-Demo öffnen](https://timintech.github.io/reiseplaner/)
 
-[![Reiseplaner – Demo-Screenshot](timintech.github.io.png)](https://timintech.github.io/reiseplaner/ "Zur Live-Demo")
+[![Reiseplaner – Demo-Screenshot](Bildschirmfoto_30-8-2025_232128_timintech.github.io.png)](https://timintech.github.io/reiseplaner/ "Zur Live-Demo")
 
 ---
 
