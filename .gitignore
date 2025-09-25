@@ -1,4 +1,8 @@
-*.log
-*.bak
-*.tmp
+node_modules/
+dist/
+build/
+.cache/
+.DS_Store
 .env
+*.log
+*.tgz
