@@ -3,9 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Reiseplaner – erweitert</title>
+  <title>Reiseplaner – responsiv & mobilfreundlich</title>
   <style>
     :root {
+      /* Theme */
       --bg: #0b1020;
       --panel: #121935;
       --muted: #97a0c3;
@@ -18,13 +19,27 @@
       --card: #161f3f;
       --input: #0e1530;
       --border: #25305c;
+
+      /* Spacing & sizes */
+      --radius: 12px;
+      --pad: 12px;
+      --gap: 10px;
+      --control: 40px;
     }
+
+    /* Kompakte Ansicht */
+    .compact :where(input, select, textarea, button){ height: 36px; }
+    .compact section{ padding: 12px; }
+
     * { box-sizing: border-box; }
     html, body { height: 100%; }
     body {
-      margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", sans-serif;
-      color: var(--text); background: radial-gradient(1200px 800px at 10% -10%, #17224a, transparent), var(--bg);
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", sans-serif;
+      color: var(--text);
+      background: radial-gradient(1200px 800px at 10% -10%, #17224a, transparent), var(--bg);
     }
+
     header { position: sticky; top: 0; z-index: 50; backdrop-filter: blur(8px); background: rgba(11,16,32,0.75); border-bottom: 1px solid var(--border); }
     .wrap { max-width: 1100px; margin: 0 auto; padding: 18px 16px; }
     h1 { font-size: 1.6rem; margin: 0; letter-spacing: .3px; }
@@ -33,30 +48,36 @@
     section { background: linear-gradient(180deg, #141c3b, #0f1632); border: 1px solid var(--border); border-radius: 16px; padding: 16px; margin: 14px auto; box-shadow: 0 6px 24px rgba(0,0,0,.25); }
     section h2 { margin: 0 0 10px; font-size: 1.2rem; }
     p.hint { color: var(--muted); margin: 4px 0 12px; }
+
     .grid { display: grid; gap: 10px; }
     .g2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .g3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .g4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
     .g6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+
     @media (max-width: 880px){ .g6{grid-template-columns: repeat(3, minmax(0,1fr));} .g4{grid-template-columns: repeat(2, minmax(0,1fr));} }
-    @media (max-width: 560px){ .g3{grid-template-columns: repeat(1, minmax(0,1fr));} .g2{grid-template-columns: 1fr;} }
+    @media (max-width: 560px){ .g3{grid-template-columns: 1fr;} .g2{grid-template-columns: 1fr;} }
 
     label { display: block; font-size: .85rem; color: var(--muted); margin-bottom: 6px; }
     input[type="text"], input[type="number"], input[type="date"], input[type="time"], select, textarea {
       width: 100%; padding: 10px 11px; border-radius: 12px; border: 1px solid var(--border);
-      background: var(--input); color: var(--text); outline: none; transition: border-color .15s;
+      background: var(--input); color: var(--text); outline: none; transition: border-color .15s; height: var(--control);
     }
     input:focus, select:focus, textarea:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(110,168,255,.16); }
     textarea { min-height: 72px; resize: vertical; }
 
-    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 0; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 0; align-items:center; }
     button { border: 1px solid var(--border); background: linear-gradient(180deg, #1a2451, #152049);
-      color: var(--text); padding: 10px 14px; border-radius: 12px; cursor: pointer; font-weight: 600;
+      color: var(--text); padding: 10px 14px; border-radius: 12px; cursor: pointer; font-weight: 600; height: var(--control);
     }
     button:hover { filter: brightness(1.05); }
     .alt { background: linear-gradient(180deg, #153c2c, #0e2e22); border-color: #1a5d45; }
     .warn { background: linear-gradient(180deg, #423208, #2f2306); border-color: #70551e; }
     .ghost { background: transparent; }
+
+    .seg { display:inline-flex; background: #0f1733; border:1px solid var(--border); border-radius: 999px; padding:4px; gap:4px; }
+    .seg button{ background:transparent; border:none; padding:6px 10px; height:auto; border-radius:999px; color:var(--muted); }
+    .seg button.active{ background: var(--card); color: var(--text); border:1px solid var(--border); }
 
     .badge { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border); padding: 4px 10px; border-radius: 999px; font-size: .85rem; color: var(--muted); }
     .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
@@ -74,21 +95,38 @@
     tbody tr:hover { background: rgba(255,255,255,.03); }
     .num { text-align: right; white-space: nowrap; }
 
+    /* Mobile table simplification toggle */
+    body.mobile thead th:nth-child(3),
+    body.mobile thead th:nth-child(5),
+    body.mobile thead th:nth-child(6){ display:none; }
+    body.mobile tbody td:nth-child(3),
+    body.mobile tbody td:nth-child(5),
+    body.mobile tbody td:nth-child(6){ display:none; }
+
     .row-actions { display: flex; gap: 6px; }
-    .link { color: var(--brand); text-decoration: none; border-bottom: 1px dashed rgba(110,168,255,.5); }
     .right { margin-left: auto; }
 
     footer { max-width: 1100px; margin: 40px auto; color: var(--muted); font-size: .85rem; padding: 0 16px 40px; }
+
+    /* Motion respect */
+    @media (prefers-reduced-motion: reduce){
+      *, *::before, *::after{ transition:none !important; animation:none !important; }
+    }
   </style>
 </head>
 <body>
   <header>
-    <div class="wrap" style="display:flex; gap:14px; align-items: center;">
-      <div style="flex:1 1 auto">
+    <div class="wrap" style="display:flex; gap:14px; align-items: center; flex-wrap:wrap">
+      <div style="flex:1 1 auto; min-width:260px">
         <h1>Reiseplaner</h1>
         <div class="sub">Budget, Tickets, Etappen und Kostenrechner für Auto, Bahn und Taxi</div>
       </div>
-      <div class="badge" id="state-badge">Nicht gespeichert</div>
+      <div class="seg" id="viewSeg" role="tablist" aria-label="Ansicht umschalten">
+        <button role="tab" data-view="standard" class="active" title="Standard">Standard</button>
+        <button role="tab" data-view="compact" title="Kompakt">Kompakt</button>
+        <button role="tab" data-view="mobile" title="Mobil">Mobil</button>
+      </div>
+      <div class="badge" id="state-badge" aria-live="polite">Nicht gespeichert</div>
     </div>
   </header>
 
@@ -98,7 +136,7 @@
       <div class="grid g4">
         <div>
           <label for="tripTitle">Titel</label>
-          <input id="tripTitle" type="text" placeholder="z. B. Berlin-Wochenende" />
+          <input id="tripTitle" type="text" placeholder="z. B. Berlin-Wochenende" autocomplete="off" />
         </div>
         <div>
           <label for="tripStart">Startdatum</label>
@@ -121,11 +159,11 @@
       <div class="grid g4" style="margin-top:10px; align-items:end;">
         <div>
           <label for="budget">Budget gesamt</label>
-          <input id="budget" type="number" step="0.01" placeholder="0,00" />
+          <input id="budget" type="number" step="0.01" inputmode="decimal" placeholder="0,00" />
         </div>
         <div>
           <label for="participants">Personen</label>
-          <input id="participants" type="number" step="1" min="1" value="1" />
+          <input id="participants" type="number" step="1" min="1" inputmode="numeric" value="1" />
         </div>
         <div>
           <label for="notes">Notizen</label>
@@ -143,7 +181,7 @@
         <div class="kpi">
           <div class="label">Budget</div>
           <div class="value" id="kpiBudget">€0,00</div>
-          <div class="progress"><i id="progBudget"></i></div>
+          <div class="progress" aria-hidden="true"><i id="progBudget"></i></div>
           <div class="delta" id="deltaBudget">verfügbar: €0,00</div>
         </div>
         <div class="kpi">
@@ -166,13 +204,13 @@
 
     <section>
       <h2>Tickets & Fixkosten</h2>
-      <p class="hint">Für Konzerte, Eintritte, Hotels, bereits gekaufte Bahntickets, etc. Markiere „bereits bezahlt“, wenn die Ausgabe schon erfolgt ist. Diese Kosten zählen zum Budget.</p>
+      <p class="hint">Markiere „bereits bezahlt“, wenn die Ausgabe schon erfolgt ist. Diese Kosten zählen zum Budget.</p>
       <div class="toolbar">
         <button id="addFixed">+ Eintrag</button>
         <button id="clearPaid" class="ghost">Bezahlte ausblenden/einblenden</button>
       </div>
       <div style="overflow:auto; margin-top:8px;">
-        <table>
+        <table aria-label="Tabelle Fixkosten">
           <thead>
             <tr>
               <th>Art</th>
@@ -191,7 +229,7 @@
 
     <section>
       <h2>Etappen & Rechner</h2>
-      <p class="hint">Lege Fahrt- oder Reiseabschnitte an. Modus wählen, Daten eintragen, Kosten werden automatisch berechnet.</p>
+      <p class="hint">Modus wählen, Daten eintragen, Kosten werden automatisch berechnet.</p>
       <div class="toolbar">
         <button id="addLeg">+ Etappe</button>
         <button id="expandAll" class="ghost">Alle öffnen/schließen</button>
@@ -201,12 +239,11 @@
 
     <section>
       <h2>Sonstige variable Kosten</h2>
-      <p class="hint">Alles, was nicht in Tickets oder Etappen steckt: Verpflegung, Parken, Souvenirs.</p>
       <div class="toolbar">
         <button id="addMisc">+ Position</button>
       </div>
       <div style="overflow:auto; margin-top:8px;">
-        <table>
+        <table aria-label="Tabelle sonstige Kosten">
           <thead>
             <tr>
               <th>Kategorie</th>
@@ -242,9 +279,10 @@
   </main>
 
   <footer>
-    <div>Hinweis: Taxitarife variieren je Stadt. Die Rechner bieten sensible Standardwerte, die du anpassen kannst. Alle Daten werden nur lokal im Browser gespeichert, bis du sie exportierst.</div>
+    <div>Hinweis: Tarife variieren je Stadt. Alle Daten werden nur lokal im Browser gespeichert, bis du sie exportierst.</div>
   </footer>
 
+  <!-- Row templates -->
   <template id="tmpl-fixed-row">
     <tr>
       <td>
@@ -256,10 +294,10 @@
           <option>Sonstiges</option>
         </select>
       </td>
-      <td><input type="text" class="f-desc" placeholder="z. B. Konzert Rammstein" /></td>
+      <td><input type="text" class="f-desc" placeholder="z. B. Konzert" /></td>
       <td><input type="date" class="f-date" /></td>
-      <td class="num"><input type="number" step="0.01" class="f-price" placeholder="0,00" /></td>
-      <td style="text-align:center"><input type="checkbox" class="f-paid" /></td>
+      <td class="num"><input type="number" step="0.01" inputmode="decimal" class="f-price" placeholder="0,00" /></td>
+      <td style="text-align:center"><input type="checkbox" class="f-paid" aria-label="bereits bezahlt" /></td>
       <td><input type="text" class="f-note" placeholder="optional" /></td>
       <td class="row-actions"><button class="ghost del">Löschen</button></td>
     </tr>
@@ -278,7 +316,7 @@
       </td>
       <td><input type="text" class="m-desc" placeholder="z. B. Abendessen" /></td>
       <td><input type="date" class="m-date" /></td>
-      <td class="num"><input type="number" step="0.01" class="m-amt" placeholder="0,00" /></td>
+      <td class="num"><input type="number" step="0.01" inputmode="decimal" class="m-amt" placeholder="0,00" /></td>
       <td><input type="text" class="m-note" placeholder="optional" /></td>
       <td class="row-actions"><button class="ghost del">Löschen</button></td>
     </tr>
@@ -333,15 +371,15 @@
         <div class="auto-opts grid g6" style="display:none;">
           <div>
             <label>Distanz (km)</label>
-            <input class="a-km" type="number" step="0.1" placeholder="0" />
+            <input class="a-km" type="number" step="0.1" inputmode="decimal" placeholder="0" />
           </div>
           <div>
             <label>Verbrauch (l/100km)</label>
-            <input class="a-cons" type="number" step="0.1" placeholder="6.5" />
+            <input class="a-cons" type="number" step="0.1" inputmode="decimal" placeholder="6.5" />
           </div>
           <div>
             <label>Kraftstoffpreis (€/l)</label>
-            <input class="a-price" type="number" step="0.01" placeholder="1.90" />
+            <input class="a-price" type="number" step="0.01" inputmode="decimal" placeholder="1.90" />
           </div>
           <div>
             <label>Fahrweise</label>
@@ -353,7 +391,7 @@
           </div>
           <div>
             <label>Maut/Parken (€)</label>
-            <input class="a-extras" type="number" step="0.01" placeholder="0" />
+            <input class="a-extras" type="number" step="0.01" inputmode="decimal" placeholder="0" />
           </div>
           <div>
             <label>Notiz</label>
@@ -364,15 +402,15 @@
         <div class="bahn-opts grid g6" style="display:none;">
           <div>
             <label>Ticketpreis (€)</label>
-            <input class="b-price" type="number" step="0.01" placeholder="0,00" />
+            <input class="b-price" type="number" step="0.01" inputmode="decimal" placeholder="0,00" />
           </div>
           <div>
             <label>Sitzplatzreservierung (€)</label>
-            <input class="b-seat" type="number" step="0.01" placeholder="0,00" />
+            <input class="b-seat" type="number" step="0.01" inputmode="decimal" placeholder="0,00" />
           </div>
           <div>
             <label>ÖPNV-Zubringer (€)</label>
-            <input class="b-local" type="number" step="0.01" placeholder="0,00" />
+            <input class="b-local" type="number" step="0.01" inputmode="decimal" placeholder="0,00" />
           </div>
           <div>
             <label>Notiz</label>
@@ -383,23 +421,23 @@
         <div class="taxi-opts grid g6" style="display:none;">
           <div>
             <label>Distanz (km)</label>
-            <input class="t-km" type="number" step="0.1" placeholder="0" />
+            <input class="t-km" type="number" step="0.1" inputmode="decimal" placeholder="0" />
           </div>
           <div>
             <label>Dauer (min)</label>
-            <input class="t-min" type="number" step="1" placeholder="0" />
+            <input class="t-min" type="number" step="1" inputmode="numeric" placeholder="0" />
           </div>
           <div>
             <label>Grundpreis (€)</label>
-            <input class="t-base" type="number" step="0.01" placeholder="4.00" />
+            <input class="t-base" type="number" step="0.01" inputmode="decimal" placeholder="4.00" />
           </div>
           <div>
             <label>Preis/km (€)</label>
-            <input class="t-perkm" type="number" step="0.01" placeholder="2.40" />
+            <input class="t-perkm" type="number" step="0.01" inputmode="decimal" placeholder="2.40" />
           </div>
           <div>
             <label>Wartezeit €/min</label>
-            <input class="t-permin" type="number" step="0.01" placeholder="0.50" />
+            <input class="t-permin" type="number" step="0.01" inputmode="decimal" placeholder="0.50" />
           </div>
           <div>
             <label>Notiz</label>
@@ -411,7 +449,7 @@
           <div class="g3" style="grid-column: 1 / -1;">
             <div>
               <label>Kosten (€)</label>
-              <input class="m-amt" type="number" step="0.01" placeholder="0,00" />
+              <input class="m-amt" type="number" step="0.01" inputmode="decimal" placeholder="0,00" />
             </div>
             <div>
               <label>Kategorie</label>
@@ -451,6 +489,22 @@
     const show = (el, on) => el.style.display = on ? '' : 'none';
 
     const currencyEl = q('#currency');
+
+    // ---------- View toggles (Standard / Kompakt / Mobil) ----------
+    const VIEW_KEY = 'reiseplaner_view_v1';
+    const seg = q('#viewSeg');
+    function applyView(view){
+      document.body.classList.toggle('compact', view==='compact');
+      document.body.classList.toggle('mobile', view==='mobile');
+      qa('#viewSeg button').forEach(b=> b.classList.toggle('active', b.dataset.view===view));
+      localStorage.setItem(VIEW_KEY, view);
+    }
+    seg.addEventListener('click', (e)=>{
+      const b = e.target.closest('button[data-view]');
+      if(!b) return;
+      applyView(b.dataset.view);
+    });
+    applyView(localStorage.getItem(VIEW_KEY) || (matchMedia('(max-width:560px)').matches ? 'mobile' : 'standard'));
 
     // ---------- Local Storage ----------
     const KEY = 'reiseplaner_v2';
@@ -705,7 +759,6 @@
       q('#progBudget').style.background = left >= 0 ? 'linear-gradient(90deg, var(--brand), var(--brand-2))' : 'linear-gradient(90deg, var(--danger), var(--warn))';
     }
 
-    
     // ---------- Buttons ----------
     q('#addFixed').addEventListener('click', ()=>{ addFixedRow(); markDirty(); });
     q('#addLeg').addEventListener('click', ()=>{ addLeg(); markDirty(); });
@@ -723,6 +776,10 @@
       const to = openCount < all.length; // open if not all open
       all.forEach(x=> x.open = to);
     });
+
+    // Debounced save to reduce LS churn
+    let saveTimer = null;
+    const debouncedSave = () => { clearTimeout(saveTimer); saveTimer = setTimeout(saveLS, 400); };
 
     q('#saveBtn').addEventListener('click', saveLS);
     q('#exportBtn').addEventListener('click', ()=>{
@@ -746,17 +803,18 @@
       location.reload();
     });
 
-    // mark dirty on any input
+    // mark dirty + autosave on any input
     document.addEventListener('input', (e)=>{
       if (e.target.closest('header')) return; // ignore header stray
       markDirty();
+      debouncedSave();
     }, true);
 
     // ---------- Boot ----------
     window.addEventListener('DOMContentLoaded', ()=>{
       loadLS();
       if(!localStorage.getItem(KEY)){
-        // sensible Defaults for quick demo
+        // Demo-Defaults
         addFixedRow({type:'Ticket', desc:'Konzert', price:99, paid:true});
         addFixedRow({type:'Hotel', desc:'2 Nächte', price:180, paid:false});
         addLeg({ mode:'auto', from:'Leopoldshöhe', to:'Hannover', auto:{ km:100, cons:6.8, price:1.9, style:1, extras:5 }});
