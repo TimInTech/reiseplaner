@@ -6,3 +6,7 @@ build/
 .env
 *.log
 *.tgz
+.venv/
+vendor/bundle/
+.bundle/
+.npm-cache/
