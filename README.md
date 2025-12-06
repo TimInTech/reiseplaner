@@ -1,65 +1,124 @@
-# 🧳 Reiseplaner – Modernes Self-Hosting Reise- und Budgettool
+# 🧳 Reiseplaner
 
-[![Demo](https://img.shields.io/badge/live-demo-blue?logo=githubpages)](https://timintech.github.io/reiseplaner/)
-[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-<!-- Build Status Badge: Wird automatisch ergänzt, falls Workflow vorhanden -->
+> **Moderner, lokaler Reise- und Budgetplaner** – Plane Etappen, tracke Kosten, behalte dein Budget im Blick. Komplett offline, keine Cloud, deine Daten bleiben bei dir.
 
-[![Reiseplaner – Demo-Screenshot](assets/screenshots/Reiseplaner.jpeg)](https://timintech.github.io/reiseplaner/ "Zur Live-Demo")
+[![Live Demo](https://img.shields.io/badge/🚀_Live_Demo-timintech.github.io-blue?style=for-the-badge)](https://timintech.github.io/reiseplaner/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
+[![GitHub Pages](https://img.shields.io/badge/Hosted_on-GitHub_Pages-222?style=for-the-badge&logo=github)](https://timintech.github.io/reiseplaner/)
+
+<p align="center">
+  <a href="https://timintech.github.io/reiseplaner/">
+    <img src="assets/screenshots/Reiseplaner.jpeg" alt="Reiseplaner Screenshot" width="100%">
+  </a>
+</p>
 
 ---
 
 ## ✨ Features
 
-- **Reisedaten**: Titel, Datum, Währung, Budget, Personen, Notizen (lokal gespeichert)
-- **Tickets & Fixkosten**: Konzerte, Eintritte, Hotels, Bahntickets mit „bezahlt“-Markierung
-- **Etappen & Rechner**: Auto, Bahn, Taxi, Fahrrad, Fuß, ÖPNV, Flug – automatische Kostenberechnung
-- **Fahrmodi**: Auto (Distanz, Verbrauch, €/l, Fahrweise, Extras), Bahn (Ticket, Reservierung, Zubringer), Taxi (km, Dauer, Preise)
-- **Zusammenfassung**: Budgetnutzung & Anteile Fix/Variabel mit Fortschrittsbalken
-- **Export/Import**: JSON-Dateien über Buttons in der App
-- **Speicherung**: Alle Daten bleiben lokal im Browser
+| Feature | Beschreibung |
+|---------|-------------|
+| 📊 **Budget-Dashboard** | Echtzeit-Übersicht über Budget, Fixkosten und variable Kosten |
+| 🎫 **Tickets & Fixkosten** | Hotels, Konzerte, Eintritte mit "bezahlt"-Status tracken |
+| 🗺️ **Etappen-Planer** | 7 Transportmodi mit automatischer Kostenberechnung |
+| 💾 **Lokale Speicherung** | Alle Daten im Browser – keine Cloud, kein Account |
+| 📤 **Export/Import** | JSON-Backup deiner Reisedaten |
+| 📱 **Mobile-First** | Optimiert für Smartphones und Tablets |
+| 🌙 **Dark Mode** | Augenschonendes dunkles Design |
 
 ---
 
-## 🛠️ Technologien & Dependencies
+## 🚗 Unterstützte Transportmodi
 
-<!-- Ergänze die Badges je nach package.json -->
+| Modus | Kostenberechnung |
+|-------|-----------------|
+| 🚗 **Auto** | Distanz × Verbrauch × Kraftstoffpreis + Maut/Parken |
+| 🚆 **Bahn** | Ticket + Reservierung + ÖPNV-Zubringer |
+| 🚕 **Taxi** | Grundpreis + (km × €/km) + (Minuten × Wartezeit) |
+| ✈️ **Flug** | Flugpreis + Gepäck/Extras |
+| 🚌 **ÖPNV** | Ticketpreis |
+| 🚲 **Fahrrad** | Leihgebühr (optional) |
+| 🚶 **Zu Fuß** | Kostenlos |
+
+---
+
+## 🚀 Schnellstart
+
+### Option 1: Online nutzen (empfohlen)
+
+👉 **[timintech.github.io/reiseplaner](https://timintech.github.io/reiseplaner/)**
+
+### Option 2: Lokal ausführen
+
+```bash
+# Repository klonen
+git clone https://github.com/TimInTech/reiseplaner.git
+cd reiseplaner
+
+# Im Browser öffnen
+# Windows: start index.html
+# macOS:   open index.html
+# Linux:   xdg-open index.html
+```
+
+> 💡 **Keine Installation nötig!** Eine einzelne HTML-Datei ohne Abhängigkeiten.
+
+---
+
+## 🛠️ Technologie
+
 ![HTML5](https://img.shields.io/badge/HTML5-E34F26?logo=html5&logoColor=white)
 ![CSS3](https://img.shields.io/badge/CSS3-1572B6?logo=css3&logoColor=white)
 ![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-F7DF1E?logo=javascript&logoColor=black)
-<!-- Beispiel für React/Node/TypeScript, falls vorhanden:
-![React](https://img.shields.io/badge/React-18.2.0-61DAFB?logo=react&logoColor=black)
-![Node.js](https://img.shields.io/badge/Node.js-20.x-339933?logo=node.js&logoColor=white)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.2-3178C6?logo=typescript&logoColor=white)
--->
-<!-- Ergänze weitere Badges für genutzte Libraries -->
+
+- **Single-File App** – Alles in einer HTML-Datei
+- **Vanilla JS** – Keine Frameworks, keine Build-Tools
+- **LocalStorage** – Persistente Speicherung im Browser
+- **Offline-fähig** – Funktioniert ohne Internet
 
 ---
 
-## 🚀 Installation & Nutzung (CLI-kompatibel)
+## 💾 Datenspeicherung
+
+Alle Daten werden **ausschließlich lokal** gespeichert:
+
+- 🔒 Keine Cloud, keine Server
+- 🚫 Kein Tracking, keine Analytics
+- 📤 JSON Export für Backups
+- 📥 JSON Import auf anderen Geräten
+
+---
+
+## 📋 Changelog
+
+Siehe [CHANGELOG.md](CHANGELOG.md) für alle Änderungen.
+
+**v2.0.0** (Dezember 2024)
+- Mobile-First Redesign
+- Touch-optimierte Bedienung
+- 7 Transportmodi
+- Verbessertes KPI-Dashboard
+
+---
+
+## 🤝 Beitragen
+
+Beiträge willkommen! Siehe [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ```bash
-cd ~
-git clone https://github.com/TimInTech/reiseplaner.git
-cd reiseplaner
-xdg-open index.html   # oder im Browser öffnen
+git checkout -b feature/mein-feature
+git commit -m "feat: Beschreibung"
+git push origin feature/mein-feature
 ```
 
-ℹ️ Die Anwendung ist komplett lokal: Keine Server, keine Cloud, keine Drittanbieter-APIs.
-Export/Import über die App: JSON-Dateien sichern & laden.
+---
+
+## 📄 Lizenz
+
+MIT License © 2025 [TimInTech](https://github.com/TimInTech)
 
 ---
 
-## 📊 Status
-
-<!-- Beispiel-Build-Badge, automatisch ergänzt bei vorhandenem Workflow -->
-<!--
-[![Build Status](https://img.shields.io/github/actions/workflow/status/TimInTech/reiseplaner/build.yml?branch=main)](https://github.com/TimInTech/reiseplaner/actions)
--->
-
----
-
-## 📚 Lizenz
-
-MIT License © 2025 TimInTech
-
----
+<p align="center">
+  <strong>⭐ Gefällt dir das Projekt? Gib einen Stern!</strong>
+</p>
