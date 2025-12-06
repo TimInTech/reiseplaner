@@ -1,833 +1,302 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Reiseplaner – responsiv & mobilfreundlich</title>
-  <style>
-    :root {
-      /* Theme */
-      --bg: #0b1020;
-      --panel: #121935;
-      --muted: #97a0c3;
-      --text: #e7ecff;
-      --brand: #6ea8ff;
-      --brand-2: #8dffb3;
-      --warn: #ffd166;
-      --danger: #ff7b7b;
-      --ok: #6de39a;
-      --card: #161f3f;
-      --input: #0e1530;
-      --border: #25305c;
-
-      /* Spacing & sizes */
-      --radius: 12px;
-      --pad: 12px;
-      --gap: 10px;
-      --control: 40px;
-    }
-
-    /* Kompakte Ansicht */
-    .compact :where(input, select, textarea, button){ height: 36px; }
-    .compact section{ padding: 12px; }
-
-    * { box-sizing: border-box; }
-    html, body { height: 100%; }
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", sans-serif;
-      color: var(--text);
-      background: radial-gradient(1200px 800px at 10% -10%, #17224a, transparent), var(--bg);
-    }
-
-    header { position: sticky; top: 0; z-index: 50; backdrop-filter: blur(8px); background: rgba(11,16,32,0.75); border-bottom: 1px solid var(--border); }
-    .wrap { max-width: 1100px; margin: 0 auto; padding: 18px 16px; }
-    h1 { font-size: 1.6rem; margin: 0; letter-spacing: .3px; }
-    .sub { color: var(--muted); font-size: .95rem; margin-top: 4px; }
-    main { padding: 24px 16px 80px; }
-    section { background: linear-gradient(180deg, #141c3b, #0f1632); border: 1px solid var(--border); border-radius: 16px; padding: 16px; margin: 14px auto; box-shadow: 0 6px 24px rgba(0,0,0,.25); }
-    section h2 { margin: 0 0 10px; font-size: 1.2rem; }
-    p.hint { color: var(--muted); margin: 4px 0 12px; }
-
-    .grid { display: grid; gap: 10px; }
-    .g2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .g3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .g4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-    .g6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
-
-    @media (max-width: 880px){ .g6{grid-template-columns: repeat(3, minmax(0,1fr));} .g4{grid-template-columns: repeat(2, minmax(0,1fr));} }
-    @media (max-width: 560px){ .g3{grid-template-columns: 1fr;} .g2{grid-template-columns: 1fr;} }
-
-    label { display: block; font-size: .85rem; color: var(--muted); margin-bottom: 6px; }
-    input[type="text"], input[type="number"], input[type="date"], input[type="time"], select, textarea {
-      width: 100%; padding: 10px 11px; border-radius: 12px; border: 1px solid var(--border);
-      background: var(--input); color: var(--text); outline: none; transition: border-color .15s; height: var(--control);
-    }
-    input:focus, select:focus, textarea:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(110,168,255,.16); }
-    textarea { min-height: 72px; resize: vertical; }
-
-    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 0; align-items:center; }
-    button { border: 1px solid var(--border); background: linear-gradient(180deg, #1a2451, #152049);
-      color: var(--text); padding: 10px 14px; border-radius: 12px; cursor: pointer; font-weight: 600; height: var(--control);
-    }
-    button:hover { filter: brightness(1.05); }
-    .alt { background: linear-gradient(180deg, #153c2c, #0e2e22); border-color: #1a5d45; }
-    .warn { background: linear-gradient(180deg, #423208, #2f2306); border-color: #70551e; }
-    .ghost { background: transparent; }
-
-    .seg { display:inline-flex; background: #0f1733; border:1px solid var(--border); border-radius: 999px; padding:4px; gap:4px; }
-    .seg button{ background:transparent; border:none; padding:6px 10px; height:auto; border-radius:999px; color:var(--muted); }
-    .seg button.active{ background: var(--card); color: var(--text); border:1px solid var(--border); }
-
-    .badge { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border); padding: 4px 10px; border-radius: 999px; font-size: .85rem; color: var(--muted); }
-    .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
-    .kpi { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 12px; }
-    .kpi .label { color: var(--muted); font-size: .85rem; }
-    .kpi .value { font-size: 1.3rem; font-weight: 700; margin-top: 6px; }
-    .kpi .delta { font-size: .85rem; margin-top: 4px; }
-
-    .progress { height: 10px; border-radius: 999px; background: #0a0f22; border: 1px solid var(--border); overflow: hidden; }
-    .progress > i { display: block; height: 100%; background: linear-gradient(90deg, var(--brand), var(--brand-2)); width: 0%; transition: width .3s; }
-
-    table { width: 100%; border-collapse: collapse; }
-    th, td { text-align: left; border-bottom: 1px dashed var(--border); padding: 10px 6px; vertical-align: middle; }
-    thead th { font-size: .85rem; color: var(--muted); font-weight: 600; }
-    tbody tr:hover { background: rgba(255,255,255,.03); }
-    .num { text-align: right; white-space: nowrap; }
-
-    /* Mobile table simplification toggle */
-    body.mobile thead th:nth-child(3),
-    body.mobile thead th:nth-child(5),
-    body.mobile thead th:nth-child(6){ display:none; }
-    body.mobile tbody td:nth-child(3),
-    body.mobile tbody td:nth-child(5),
-    body.mobile tbody td:nth-child(6){ display:none; }
-
-    .row-actions { display: flex; gap: 6px; }
-    .right { margin-left: auto; }
-
-    footer { max-width: 1100px; margin: 40px auto; color: var(--muted); font-size: .85rem; padding: 0 16px 40px; }
-
-    /* Motion respect */
-    @media (prefers-reduced-motion: reduce){
-      *, *::before, *::after{ transition:none !important; animation:none !important; }
-    }
-  </style>
-</head>
-<body>
-  <header>
-    <div class="wrap" style="display:flex; gap:14px; align-items: center; flex-wrap:wrap">
-      <div style="flex:1 1 auto; min-width:260px">
-        <h1>Reiseplaner</h1>
-        <div class="sub">Budget, Tickets, Etappen und Kostenrechner für Auto, Bahn und Taxi</div>
-      </div>
-      <div class="seg" id="viewSeg" role="tablist" aria-label="Ansicht umschalten">
-        <button role="tab" data-view="standard" class="active" title="Standard">Standard</button>
-        <button role="tab" data-view="compact" title="Kompakt">Kompakt</button>
-        <button role="tab" data-view="mobile" title="Mobil">Mobil</button>
-      </div>
-      <div class="badge" id="state-badge" aria-live="polite">Nicht gespeichert</div>
-    </div>
-  </header>
-
-  <main class="wrap">
-    <section>
-      <h2>Reisedaten</h2>
-      <div class="grid g4">
-        <div>
-          <label for="tripTitle">Titel</label>
-          <input id="tripTitle" type="text" placeholder="z. B. Berlin-Wochenende" autocomplete="off" />
-        </div>
-        <div>
-          <label for="tripStart">Startdatum</label>
-          <input id="tripStart" type="date" />
-        </div>
-        <div>
-          <label for="tripEnd">Enddatum</label>
-          <input id="tripEnd" type="date" />
-        </div>
-        <div>
-          <label for="currency">Währung</label>
-          <select id="currency">
-            <option value="EUR" selected>EUR €</option>
-            <option value="CHF">CHF</option>
-            <option value="USD">USD $</option>
-            <option value="GBP">GBP £</option>
-          </select>
-        </div>
-      </div>
-      <div class="grid g4" style="margin-top:10px; align-items:end;">
-        <div>
-          <label for="budget">Budget gesamt</label>
-          <input id="budget" type="number" step="0.01" inputmode="decimal" placeholder="0,00" />
-        </div>
-        <div>
-          <label for="participants">Personen</label>
-          <input id="participants" type="number" step="1" min="1" inputmode="numeric" value="1" />
-        </div>
-        <div>
-          <label for="notes">Notizen</label>
-          <input id="notes" type="text" placeholder="optional" />
-        </div>
-        <div class="toolbar">
-          <button id="saveBtn">Speichern</button>
-          <button id="exportBtn" class="alt">Export JSON</button>
-          <button id="importBtn" class="ghost">Import JSON</button>
-          <input type="file" id="importFile" accept="application/json" style="display:none" />
-          <button id="resetBtn" class="warn">Zurücksetzen</button>
-        </div>
-      </div>
-      <div class="kpis" style="margin-top:12px;">
-        <div class="kpi">
-          <div class="label">Budget</div>
-          <div class="value" id="kpiBudget">€0,00</div>
-          <div class="progress" aria-hidden="true"><i id="progBudget"></i></div>
-          <div class="delta" id="deltaBudget">verfügbar: €0,00</div>
-        </div>
-        <div class="kpi">
-          <div class="label">Fixkosten (Tickets & Co.)</div>
-          <div class="value" id="kpiFixed">€0,00</div>
-          <div class="delta" id="deltaFixed">bezahlt: €0,00 · offen: €0,00</div>
-        </div>
-        <div class="kpi">
-          <div class="label">Variable Kosten (Etappen & Sonstiges)</div>
-          <div class="value" id="kpiVar">€0,00</div>
-          <div class="delta" id="deltaVar">Auto €0,00 · Bahn €0,00 · Taxi €0,00 · Sonstiges €0,00</div>
-        </div>
-        <div class="kpi">
-          <div class="label">Gesamt</div>
-          <div class="value" id="kpiTotal">€0,00</div>
-          <div class="delta" id="deltaTotal">Budget-Abdeckung: 0%</div>
-        </div>
-      </div>
-    </section>
-
-    <section>
-      <h2>Tickets & Fixkosten</h2>
-      <p class="hint">Markiere „bereits bezahlt“, wenn die Ausgabe schon erfolgt ist. Diese Kosten zählen zum Budget.</p>
-      <div class="toolbar">
-        <button id="addFixed">+ Eintrag</button>
-        <button id="clearPaid" class="ghost">Bezahlte ausblenden/einblenden</button>
-      </div>
-      <div style="overflow:auto; margin-top:8px;">
-        <table aria-label="Tabelle Fixkosten">
-          <thead>
-            <tr>
-              <th>Art</th>
-              <th>Beschreibung</th>
-              <th>Datum</th>
-              <th class="num">Preis</th>
-              <th>bezahlt</th>
-              <th>Notiz</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="fixedBody"></tbody>
-        </table>
-      </div>
-    </section>
-
-    <section>
-      <h2>Etappen & Rechner</h2>
-      <p class="hint">Modus wählen, Daten eintragen, Kosten werden automatisch berechnet.</p>
-      <div class="toolbar">
-        <button id="addLeg">+ Etappe</button>
-        <button id="expandAll" class="ghost">Alle öffnen/schließen</button>
-      </div>
-      <div id="legs"></div>
-    </section>
-
-    <section>
-      <h2>Sonstige variable Kosten</h2>
-      <div class="toolbar">
-        <button id="addMisc">+ Position</button>
-      </div>
-      <div style="overflow:auto; margin-top:8px;">
-        <table aria-label="Tabelle sonstige Kosten">
-          <thead>
-            <tr>
-              <th>Kategorie</th>
-              <th>Beschreibung</th>
-              <th>Datum</th>
-              <th class="num">Betrag</th>
-              <th>Notiz</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="miscBody"></tbody>
-        </table>
-      </div>
-    </section>
-
-    <section>
-      <h2>Zusammenfassung</h2>
-      <div class="grid g3">
-        <div>
-          <label>Budgetnutzung</label>
-          <div class="progress" style="margin-top:6px"><i id="progTotal"></i></div>
-        </div>
-        <div>
-          <label>Fixkosten-Anteil</label>
-          <div class="progress" style="margin-top:6px"><i id="progFixed"></i></div>
-        </div>
-        <div>
-          <label>Variable-Kosten-Anteil</label>
-          <div class="progress" style="margin-top:6px"><i id="progVar"></i></div>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <footer>
-    <div>Hinweis: Tarife variieren je Stadt. Alle Daten werden nur lokal im Browser gespeichert, bis du sie exportierst.</div>
-  </footer>
-
-  <!-- Row templates -->
-  <template id="tmpl-fixed-row">
-    <tr>
-      <td>
-        <select class="f-type">
-          <option>Ticket</option>
-          <option>Hotel</option>
-          <option>Eintritt</option>
-          <option>Bahn</option>
-          <option>Sonstiges</option>
-        </select>
-      </td>
-      <td><input type="text" class="f-desc" placeholder="z. B. Konzert" /></td>
-      <td><input type="date" class="f-date" /></td>
-      <td class="num"><input type="number" step="0.01" inputmode="decimal" class="f-price" placeholder="0,00" /></td>
-      <td style="text-align:center"><input type="checkbox" class="f-paid" aria-label="bereits bezahlt" /></td>
-      <td><input type="text" class="f-note" placeholder="optional" /></td>
-      <td class="row-actions"><button class="ghost del">Löschen</button></td>
-    </tr>
-  </template>
-
-  <template id="tmpl-misc-row">
-    <tr>
-      <td>
-        <select class="m-cat">
-          <option>Verpflegung</option>
-          <option>Parken</option>
-          <option>Souvenir</option>
-          <option>ÖPNV</option>
-          <option>Sonstiges</option>
-        </select>
-      </td>
-      <td><input type="text" class="m-desc" placeholder="z. B. Abendessen" /></td>
-      <td><input type="date" class="m-date" /></td>
-      <td class="num"><input type="number" step="0.01" inputmode="decimal" class="m-amt" placeholder="0,00" /></td>
-      <td><input type="text" class="m-note" placeholder="optional" /></td>
-      <td class="row-actions"><button class="ghost del">Löschen</button></td>
-    </tr>
-  </template>
-
-  <template id="tmpl-leg">
-    <details class="leg" open>
-      <summary style="display:flex; align-items:center; gap:10px; cursor:pointer;">
-        <span class="badge">Etappe</span>
-        <span class="leg-label" style="font-weight:700">–</span>
-        <span class="right badge" style="gap:8px;">
-          <span class="leg-mode-chip">Auto</span>
-          <span class="leg-cost">€0,00</span>
-        </span>
-      </summary>
-      <div class="grid g6" style="margin-top:12px;">
-        <div>
-          <label>Modus</label>
-          <select class="l-mode">
-            <option value="auto" selected>Auto</option>
-            <option value="bahn">Bahn</option>
-            <option value="taxi">Taxi</option>
-            <option value="fahrrad">Fahrrad</option>
-            <option value="fuss">Zu Fuß</option>
-            <option value="oepnv">ÖPNV</option>
-            <option value="flug">Flug</option>
-          </select>
-        </div>
-        <div>
-          <label>Start</label>
-          <input class="l-from" type="text" placeholder="z. B. Leopoldshöhe" />
-        </div>
-        <div>
-          <label>Ziel</label>
-          <input class="l-to" type="text" placeholder="z. B. Berlin" />
-        </div>
-        <div>
-          <label>Datum</label>
-          <input class="l-date" type="date" />
-        </div>
-        <div>
-          <label>Startzeit</label>
-          <input class="l-time-start" type="time" />
-        </div>
-        <div>
-          <label>Endzeit</label>
-          <input class="l-time-end" type="time" />
-        </div>
-      </div>
-
-      <div class="card" style="margin-top:12px; padding:12px; border:1px solid var(--border); border-radius:12px; background: var(--card);">
-        <div class="auto-opts grid g6" style="display:none;">
-          <div>
-            <label>Distanz (km)</label>
-            <input class="a-km" type="number" step="0.1" inputmode="decimal" placeholder="0" />
-          </div>
-          <div>
-            <label>Verbrauch (l/100km)</label>
-            <input class="a-cons" type="number" step="0.1" inputmode="decimal" placeholder="6.5" />
-          </div>
-          <div>
-            <label>Kraftstoffpreis (€/l)</label>
-            <input class="a-price" type="number" step="0.01" inputmode="decimal" placeholder="1.90" />
-          </div>
-          <div>
-            <label>Fahrweise</label>
-            <select class="a-style">
-              <option value="0.9">Eco</option>
-              <option value="1" selected>Normal</option>
-              <option value="1.1">Sport</option>
-            </select>
-          </div>
-          <div>
-            <label>Maut/Parken (€)</label>
-            <input class="a-extras" type="number" step="0.01" inputmode="decimal" placeholder="0" />
-          </div>
-          <div>
-            <label>Notiz</label>
-            <input class="a-note" type="text" placeholder="optional" />
-          </div>
-        </div>
-
-        <div class="bahn-opts grid g6" style="display:none;">
-          <div>
-            <label>Ticketpreis (€)</label>
-            <input class="b-price" type="number" step="0.01" inputmode="decimal" placeholder="0,00" />
-          </div>
-          <div>
-            <label>Sitzplatzreservierung (€)</label>
-            <input class="b-seat" type="number" step="0.01" inputmode="decimal" placeholder="0,00" />
-          </div>
-          <div>
-            <label>ÖPNV-Zubringer (€)</label>
-            <input class="b-local" type="number" step="0.01" inputmode="decimal" placeholder="0,00" />
-          </div>
-          <div>
-            <label>Notiz</label>
-            <input class="b-note" type="text" placeholder="optional" />
-          </div>
-        </div>
-
-        <div class="taxi-opts grid g6" style="display:none;">
-          <div>
-            <label>Distanz (km)</label>
-            <input class="t-km" type="number" step="0.1" inputmode="decimal" placeholder="0" />
-          </div>
-          <div>
-            <label>Dauer (min)</label>
-            <input class="t-min" type="number" step="1" inputmode="numeric" placeholder="0" />
-          </div>
-          <div>
-            <label>Grundpreis (€)</label>
-            <input class="t-base" type="number" step="0.01" inputmode="decimal" placeholder="4.00" />
-          </div>
-          <div>
-            <label>Preis/km (€)</label>
-            <input class="t-perkm" type="number" step="0.01" inputmode="decimal" placeholder="2.40" />
-          </div>
-          <div>
-            <label>Wartezeit €/min</label>
-            <input class="t-permin" type="number" step="0.01" inputmode="decimal" placeholder="0.50" />
-          </div>
-          <div>
-            <label>Notiz</label>
-            <input class="t-note" type="text" placeholder="optional" />
-          </div>
-        </div>
-
-        <div class="misc-opts grid g6" style="display:none;">
-          <div class="g3" style="grid-column: 1 / -1;">
-            <div>
-              <label>Kosten (€)</label>
-              <input class="m-amt" type="number" step="0.01" inputmode="decimal" placeholder="0,00" />
-            </div>
-            <div>
-              <label>Kategorie</label>
-              <select class="m-cat">
-                <option>ÖPNV</option>
-                <option>Fahrrad</option>
-                <option>Zu Fuß</option>
-                <option>Flug</option>
-                <option>Sonstiges</option>
-              </select>
-            </div>
-            <div>
-              <label>Notiz</label>
-              <input class="m-note" type="text" placeholder="optional" />
-            </div>
-          </div>
-        </div>
-
-        <div style="display:flex; gap:8px; align-items:center; margin-top:10px; color: var(--muted);">
-          <span>Berechnete Kosten:</span>
-          <strong class="leg-total">€0,00</strong>
-          <span class="right"></span>
-          <button class="ghost del-leg">Etappe löschen</button>
-        </div>
-      </div>
-    </details>
-  </template>
-
-  <script>
-    // ---------- Helpers ----------
-    const fmt = (n, cur = document.getElementById('currency')?.value || 'EUR') => {
-      try { return new Intl.NumberFormat('de-DE', { style: 'currency', currency: cur }).format(+n || 0); } catch { return (n||0).toFixed(2); }
+    // ==================== Data ====================
+    let appData = {
+      trip: { title: '', startDate: '', endDate: '', currency: 'EUR', budget: 0, persons: 1, notes: '' },
+      tickets: [], stages: [], otherCosts: []
     };
-    const q = (sel, el = document) => el.querySelector(sel);
-    const qa = (sel, el = document) => Array.from(el.querySelectorAll(sel));
-    const val = (el) => +el.value || 0;
-    const show = (el, on) => el.style.display = on ? '' : 'none';
+    const currencySymbols = { 'EUR': '€', 'CHF': 'CHF', 'USD': '$', 'GBP': '£' };
+    let currentMode = 'auto';
+    let editingTicketIndex = null, editingStageIndex = null, editingOtherIndex = null;
 
-    const currencyEl = q('#currency');
-
-    // ---------- View toggles (Standard / Kompakt / Mobil) ----------
-    const VIEW_KEY = 'reiseplaner_view_v1';
-    const seg = q('#viewSeg');
-    function applyView(view){
-      document.body.classList.toggle('compact', view==='compact');
-      document.body.classList.toggle('mobile', view==='mobile');
-      qa('#viewSeg button').forEach(b=> b.classList.toggle('active', b.dataset.view===view));
-      localStorage.setItem(VIEW_KEY, view);
-    }
-    seg.addEventListener('click', (e)=>{
-      const b = e.target.closest('button[data-view]');
-      if(!b) return;
-      applyView(b.dataset.view);
+    // ==================== Init ====================
+    document.addEventListener('DOMContentLoaded', () => {
+      loadData();
+      setupListeners();
+      updateUI();
     });
-    applyView(localStorage.getItem(VIEW_KEY) || (matchMedia('(max-width:560px)').matches ? 'mobile' : 'standard'));
 
-    // ---------- Local Storage ----------
-    const KEY = 'reiseplaner_v2';
-    const saveBadge = q('#state-badge');
-    const markSaved = (txt = 'Gespeichert') => { saveBadge.textContent = txt; saveBadge.style.color = '#8dffb3'; };
-    const markDirty = () => { saveBadge.textContent = 'Nicht gespeichert'; saveBadge.style.color = '#ffd166'; };
-
-    const serialize = () => {
-      return {
-        title: q('#tripTitle').value,
-        start: q('#tripStart').value,
-        end: q('#tripEnd').value,
-        currency: currencyEl.value,
-        budget: val(q('#budget')),
-        persons: val(q('#participants')) || 1,
-        notes: q('#notes').value,
-        fixed: qa('#fixedBody tr').map(tr => ({
-          type: q('.f-type', tr).value,
-          desc: q('.f-desc', tr).value,
-          date: q('.f-date', tr).value,
-          price: val(q('.f-price', tr)),
-          paid: q('.f-paid', tr).checked,
-          note: q('.f-note', tr).value
-        })),
-        legs: qa('#legs .leg').map(det => {
-          const mode = q('.l-mode', det).value;
-          return {
-            mode,
-            from: q('.l-from', det).value,
-            to: q('.l-to', det).value,
-            date: q('.l-date', det).value,
-            t1: q('.l-time-start', det).value,
-            t2: q('.l-time-end', det).value,
-            auto: {
-              km: val(q('.a-km', det)), cons: val(q('.a-cons', det)), price: val(q('.a-price', det)), style: +q('.a-style', det).value || 1, extras: val(q('.a-extras', det)), note: q('.a-note', det).value
-            },
-            bahn: { price: val(q('.b-price', det)), seat: val(q('.b-seat', det)), local: val(q('.b-local', det)), note: q('.b-note', det).value },
-            taxi: { km: val(q('.t-km', det)), min: val(q('.t-min', det)), base: val(q('.t-base', det))||4, perkm: val(q('.t-perkm', det))||2.4, permin: val(q('.t-permin', det))||0.5, note: q('.t-note', det).value },
-            misc: { amt: val(q('.m-amt', det)), cat: q('.m-cat', det).value, note: q('.m-note', det).value }
-          }
-        }),
-        misc: qa('#miscBody tr').map(tr => ({
-          cat: q('.m-cat', tr).value,
-          desc: q('.m-desc', tr).value,
-          date: q('.m-date', tr).value,
-          amt: val(q('.m-amt', tr)),
-          note: q('.m-note', tr).value
-        }))
-      };
-    };
-
-    const restore = (data) => {
-      q('#tripTitle').value = data.title || '';
-      q('#tripStart').value = data.start || '';
-      q('#tripEnd').value = data.end || '';
-      currencyEl.value = data.currency || 'EUR';
-      q('#budget').value = data.budget || '';
-      q('#participants').value = data.persons || 1;
-      q('#notes').value = data.notes || '';
-
-      q('#fixedBody').innerHTML = '';
-      (data.fixed || []).forEach(addFixedRow);
-
-      q('#legs').innerHTML = '';
-      (data.legs || []).forEach(addLeg);
-
-      q('#miscBody').innerHTML = '';
-      (data.misc || []).forEach(addMiscRow);
-
-      recalc();
-      markSaved();
-    };
-
-    const saveLS = () => { localStorage.setItem(KEY, JSON.stringify(serialize())); markSaved(); };
-
-    const loadLS = () => {
-      const raw = localStorage.getItem(KEY);
-      if (raw) try { restore(JSON.parse(raw)); } catch {}
-    };
-
-    // ---------- Fixed Rows ----------
-    const fixedBody = q('#fixedBody');
-    const fixedTmpl = q('#tmpl-fixed-row');
-
-    function addFixedRow(obj = {}){
-      const node = fixedTmpl.content.cloneNode(true);
-      const tr = node.querySelector('tr');
-      q('.f-type', tr).value = obj.type || 'Ticket';
-      q('.f-desc', tr).value = obj.desc || '';
-      q('.f-date', tr).value = obj.date || '';
-      q('.f-price', tr).value = obj.price ?? '';
-      q('.f-paid', tr).checked = !!obj.paid;
-      q('.f-note', tr).value = obj.note || '';
-      q('.del', tr).addEventListener('click', () => { tr.remove(); markDirty(); recalc(); });
-      fixedBody.appendChild(node);
-      tr.addEventListener('input', () => { markDirty(); recalc(); });
-      recalc();
-    }
-
-    // ---------- Misc Rows ----------
-    const miscBody = q('#miscBody');
-    const miscTmpl = q('#tmpl-misc-row');
-
-    function addMiscRow(obj = {}){
-      const node = miscTmpl.content.cloneNode(true);
-      const tr = node.querySelector('tr');
-      q('.m-cat', tr).value = obj.cat || 'Verpflegung';
-      q('.m-desc', tr).value = obj.desc || '';
-      q('.m-date', tr).value = obj.date || '';
-      q('.m-amt', tr).value = obj.amt ?? '';
-      q('.m-note', tr).value = obj.note || '';
-      q('.del', tr).addEventListener('click', () => { tr.remove(); markDirty(); recalc(); });
-      miscBody.appendChild(node);
-      tr.addEventListener('input', () => { markDirty(); recalc(); });
-      recalc();
-    }
-
-    // ---------- Legs ----------
-    const legsWrap = q('#legs');
-    const legTmpl = q('#tmpl-leg');
-
-    function addLeg(obj = {}){
-      const node = legTmpl.content.cloneNode(true);
-      const det = node.querySelector('details');
-      legsWrap.appendChild(node);
-
-      const modeEl = q('.l-mode', det);
-      const fromEl = q('.l-from', det);
-      const toEl   = q('.l-to', det);
-      const dateEl = q('.l-date', det);
-      const t1El   = q('.l-time-start', det);
-      const t2El   = q('.l-time-end', det);
-
-      const modeChip = q('.leg-mode-chip', det);
-      const label = q('.leg-label', det);
-      const totalEl = q('.leg-total', det);
-      const costChip = q('.leg-cost', det);
-
-      const autoBox = q('.auto-opts', det);
-      const bahnBox = q('.bahn-opts', det);
-      const taxiBox = q('.taxi-opts', det);
-      const miscBox = q('.misc-opts', det);
-
-      const auto = {
-        km: q('.a-km', det), cons: q('.a-cons', det), price: q('.a-price', det), style: q('.a-style', det), extras: q('.a-extras', det), note: q('.a-note', det)
-      };
-      const bahn = { price: q('.b-price', det), seat: q('.b-seat', det), local: q('.b-local', det), note: q('.b-note', det) };
-      const taxi = { km: q('.t-km', det), min: q('.t-min', det), base: q('.t-base', det), perkm: q('.t-perkm', det), permin: q('.t-permin', det), note: q('.t-note', det) };
-      const misc = { amt: q('.m-amt', det), cat: q('.m-cat', det), note: q('.m-note', det) };
-
-      function setModeUI(m){
-        show(autoBox, m==='auto');
-        show(bahnBox, m==='bahn');
-        show(taxiBox, m==='taxi');
-        show(miscBox, ['fahrrad','fuss','oepnv','flug'].includes(m));
-        modeChip.textContent = m.charAt(0).toUpperCase() + m.slice(1);
-      }
-
-      function legCost(){
-        const cur = currencyEl.value;
-        let cost = 0, kind = '';
-        const m = modeEl.value;
-        if (m==='auto'){
-          const km = val(auto.km), cons = val(auto.cons), price = val(auto.price), style = +auto.style.value || 1, extras = val(auto.extras);
-          const liters = km * (cons/100) * style;
-          cost = liters * price + extras;
-          kind = 'Auto';
-        } else if (m==='bahn'){
-          cost = val(bahn.price) + val(bahn.seat) + val(bahn.local);
-          kind = 'Bahn';
-        } else if (m==='taxi'){
-          cost = val(taxi.base) + (val(taxi.km) * val(taxi.perkm)) + (val(taxi.min) * val(taxi.permin));
-          kind = 'Taxi';
-        } else {
-          cost = val(misc.amt);
-          kind = 'Sonstiges';
-        }
-        totalEl.textContent = fmt(cost, cur);
-        costChip.textContent = fmt(cost, cur);
-        label.textContent = `${fromEl.value || '–'} → ${toEl.value || '–'} (${kind})`;
-        recalc();
-      }
-
-      // hydrate from obj
-      modeEl.value = obj.mode || 'auto';
-      fromEl.value = obj.from || '';
-      toEl.value = obj.to || '';
-      dateEl.value = obj.date || '';
-      t1El.value = obj.t1 || '';
-      t2El.value = obj.t2 || '';
-
-      if (obj.auto){ auto.km.value = obj.auto.km || ''; auto.cons.value = obj.auto.cons || ''; auto.price.value = obj.auto.price || ''; auto.style.value = obj.auto.style || '1'; auto.extras.value = obj.auto.extras || ''; auto.note.value = obj.auto.note || ''; }
-      if (obj.bahn){ bahn.price.value = obj.bahn.price || ''; bahn.seat.value = obj.bahn.seat || ''; bahn.local.value = obj.bahn.local || ''; bahn.note.value = obj.bahn.note || ''; }
-      if (obj.taxi){ taxi.km.value = obj.taxi.km || ''; taxi.min.value = obj.taxi.min || ''; taxi.base.value = obj.taxi.base || '4'; taxi.perkm.value = obj.taxi.perkm || '2.4'; taxi.permin.value = obj.taxi.permin || '0.5'; taxi.note.value = obj.taxi.note || ''; }
-      if (obj.misc){ misc.amt.value = obj.misc.amt || ''; misc.cat.value = obj.misc.cat || 'Sonstiges'; misc.note.value = obj.misc.note || ''; }
-
-      setModeUI(modeEl.value);
-      legCost();
-
-      det.addEventListener('input', () => { markDirty(); legCost(); });
-      modeEl.addEventListener('change', () => { setModeUI(modeEl.value); legCost(); });
-      q('.del-leg', det).addEventListener('click', () => { det.remove(); markDirty(); recalc(); });
-    }
-
-    // ---------- Recalc Dashboard ----------
-    function recalc(){
-      const data = serialize();
-      const cur = data.currency || 'EUR';
-      const budget = +data.budget || 0;
-
-      const fixedTotal = data.fixed.reduce((s,x)=>s + (+x.price||0),0);
-      const fixedPaid = data.fixed.filter(x=>x.paid).reduce((s,x)=>s + (+x.price||0),0);
-      const fixedOpen = fixedTotal - fixedPaid;
-
-      let autoCost = 0, bahnCost = 0, taxiCost = 0, otherLeg = 0;
-      data.legs.forEach(l => {
-        if (l.mode==='auto'){
-          const liters = l.auto.km * (l.auto.cons/100) * (l.auto.style||1);
-          autoCost += liters * l.auto.price + l.auto.extras;
-        } else if (l.mode==='bahn'){
-          bahnCost += l.bahn.price + l.bahn.seat + l.bahn.local;
-        } else if (l.mode==='taxi'){
-          taxiCost += l.taxi.base + (l.taxi.km * l.taxi.perkm) + (l.taxi.min * l.taxi.permin);
-        } else {
-          otherLeg += l.misc.amt;
-        }
+    function setupListeners() {
+      document.querySelectorAll('.mode-fields input').forEach(el => el.addEventListener('input', calculateStageCost));
+      ['tripTitle','tripStart','tripEnd','tripCurrency','tripBudget','tripPersons','tripNotes'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('change', () => { updateTripData(); markUnsaved(); });
       });
-
-      const miscTotal = data.misc.reduce((s,x)=>s + (+x.amt||0),0);
-      const varTotal = autoCost + bahnCost + taxiCost + otherLeg + miscTotal;
-      const grand = fixedTotal + varTotal;
-
-      // KPIs
-      q('#kpiBudget').textContent = fmt(budget, cur);
-      q('#kpiFixed').textContent = fmt(fixedTotal, cur);
-      q('#deltaFixed').textContent = `bezahlt: ${fmt(fixedPaid,cur)} · offen: ${fmt(fixedOpen,cur)}`;
-      q('#kpiVar').textContent = fmt(varTotal, cur);
-      q('#deltaVar').textContent = `Auto ${fmt(autoCost,cur)} · Bahn ${fmt(bahnCost,cur)} · Taxi ${fmt(taxiCost,cur)} · Sonstiges ${fmt(otherLeg+miscTotal,cur)}`;
-      q('#kpiTotal').textContent = fmt(grand, cur);
-      const cover = budget ? Math.min(100, Math.round((grand / budget) * 100)) : 0;
-      q('#deltaTotal').textContent = `Budget-Abdeckung: ${cover}%`;
-
-      // progress bars
-      q('#progBudget').style.width = budget? '100%' : '0%';
-      q('#progTotal').style.width = budget? `${Math.min(100, (grand/budget)*100)}%` : '0%';
-      q('#progFixed').style.width = grand? `${Math.min(100, (fixedTotal/grand)*100)}%` : '0%';
-      q('#progVar').style.width = grand? `${Math.min(100, (varTotal/grand)*100)}%` : '0%';
-
-      // budget delta text
-      const left = budget - grand;
-      q('#deltaBudget').textContent = `verfügbar: ${fmt(left,cur)}`;
-      q('#progBudget').style.background = left >= 0 ? 'linear-gradient(90deg, var(--brand), var(--brand-2))' : 'linear-gradient(90deg, var(--danger), var(--warn))';
+      document.querySelectorAll('.modal-overlay').forEach(o => {
+        o.addEventListener('click', e => { if (e.target === o) closeModal(o.id); });
+      });
     }
 
-    // ---------- Buttons ----------
-    q('#addFixed').addEventListener('click', ()=>{ addFixedRow(); markDirty(); });
-    q('#addLeg').addEventListener('click', ()=>{ addLeg(); markDirty(); });
-    q('#addMisc').addEventListener('click', ()=>{ addMiscRow(); markDirty(); });
+    // ==================== Storage ====================
+    function loadData() {
+      const saved = localStorage.getItem('reiseplanerData');
+      if (saved) { try { appData = JSON.parse(saved); populateForm(); markSaved(); } catch(e) { console.error(e); } }
+    }
+    function saveData() { updateTripData(); localStorage.setItem('reiseplanerData', JSON.stringify(appData)); markSaved(); updateUI(); }
+    function updateTripData() {
+      appData.trip.title = document.getElementById('tripTitle').value;
+      appData.trip.startDate = document.getElementById('tripStart').value;
+      appData.trip.endDate = document.getElementById('tripEnd').value;
+      appData.trip.currency = document.getElementById('tripCurrency').value;
+      appData.trip.budget = parseFloat(document.getElementById('tripBudget').value) || 0;
+      appData.trip.persons = parseInt(document.getElementById('tripPersons').value) || 1;
+      appData.trip.notes = document.getElementById('tripNotes').value;
+    }
+    function populateForm() {
+      document.getElementById('tripTitle').value = appData.trip.title || '';
+      document.getElementById('tripStart').value = appData.trip.startDate || '';
+      document.getElementById('tripEnd').value = appData.trip.endDate || '';
+      document.getElementById('tripCurrency').value = appData.trip.currency || 'EUR';
+      document.getElementById('tripBudget').value = appData.trip.budget || '';
+      document.getElementById('tripPersons').value = appData.trip.persons || 1;
+      document.getElementById('tripNotes').value = appData.trip.notes || '';
+    }
+    function markSaved() { document.getElementById('saveIndicator').classList.add('saved'); document.getElementById('saveStatus').textContent = 'Gespeichert'; }
+    function markUnsaved() { document.getElementById('saveIndicator').classList.remove('saved'); document.getElementById('saveStatus').textContent = 'Nicht gespeichert'; }
 
-    q('#clearPaid').addEventListener('click', ()=>{
-      qa('#fixedBody tr').forEach(tr => {
-        const paid = q('.f-paid', tr).checked; tr.style.display = paid && tr.style.display !== 'none' ? 'none' : '';
-      })
-    });
-
-    q('#expandAll').addEventListener('click', ()=>{
-      const all = qa('#legs details');
-      const openCount = all.filter(x=>x.open).length;
-      const to = openCount < all.length; // open if not all open
-      all.forEach(x=> x.open = to);
-    });
-
-    // Debounced save to reduce LS churn
-    let saveTimer = null;
-    const debouncedSave = () => { clearTimeout(saveTimer); saveTimer = setTimeout(saveLS, 400); };
-
-    q('#saveBtn').addEventListener('click', saveLS);
-    q('#exportBtn').addEventListener('click', ()=>{
-      const blob = new Blob([JSON.stringify(serialize(), null, 2)], {type:'application/json'});
-      const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-      a.download = 'reiseplaner_export.json'; a.click(); URL.revokeObjectURL(a.href);
-    });
-
-    const importFile = q('#importFile');
-    q('#importBtn').addEventListener('click', ()=> importFile.click());
-    importFile.addEventListener('change', async (e)=>{
-      const file = e.target.files?.[0]; if(!file) return;
-      const text = await file.text();
-      try { const data = JSON.parse(text); restore(data); markSaved('Importiert & gespeichert'); saveLS(); }
-      catch { alert('Ungültige JSON-Datei'); }
-    });
-
-    q('#resetBtn').addEventListener('click', ()=>{
-      if(!confirm('Alle Eingaben löschen?')) return;
-      localStorage.removeItem(KEY);
-      location.reload();
-    });
-
-    // mark dirty + autosave on any input
-    document.addEventListener('input', (e)=>{
-      if (e.target.closest('header')) return; // ignore header stray
-      markDirty();
-      debouncedSave();
-    }, true);
-
-    // ---------- Boot ----------
-    window.addEventListener('DOMContentLoaded', ()=>{
-      loadLS();
-      if(!localStorage.getItem(KEY)){
-        // Demo-Defaults
-        addFixedRow({type:'Ticket', desc:'Konzert', price:99, paid:true});
-        addFixedRow({type:'Hotel', desc:'2 Nächte', price:180, paid:false});
-        addLeg({ mode:'auto', from:'Leopoldshöhe', to:'Hannover', auto:{ km:100, cons:6.8, price:1.9, style:1, extras:5 }});
-        addLeg({ mode:'bahn', from:'Hannover', to:'Berlin', bahn:{ price:39.9, seat:4.9, local:0 }});
-        addLeg({ mode:'taxi', from:'Hbf', to:'Hotel', taxi:{ km:5, min:12, base:4, perkm:2.4, permin:0.5 }});
-        addMiscRow({cat:'Verpflegung', desc:'Snacks', amt:12});
-        q('#budget').value = 500;
-        recalc();
-        markDirty();
-      } else {
-        recalc();
+    // ==================== Export/Import ====================
+    function exportData() {
+      updateTripData();
+      const blob = new Blob([JSON.stringify(appData, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = appData.trip.title ? `reise-${appData.trip.title.toLowerCase().replace(/\s+/g, '-')}.json` : 'reiseplaner.json';
+      a.click();
+    }
+    function importData(e) {
+      const file = e.target.files[0]; if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        try {
+          const d = JSON.parse(ev.target.result);
+          if (d.trip) { appData = d; populateForm(); saveData(); alert('✅ Import erfolgreich!'); }
+          else alert('❌ Ungültiges Format');
+        } catch { alert('❌ Fehler beim Import'); }
+      };
+      reader.readAsText(file);
+      e.target.value = '';
+    }
+    function resetData() {
+      if (confirm('⚠️ Alle Daten löschen?')) {
+        localStorage.removeItem('reiseplanerData');
+        appData = { trip: { title: '', startDate: '', endDate: '', currency: 'EUR', budget: 0, persons: 1, notes: '' }, tickets: [], stages: [], otherCosts: [] };
+        populateForm(); updateUI(); markUnsaved();
       }
-    });
+    }
+
+    // ==================== UI Updates ====================
+    function updateUI() { updateKPIs(); renderTickets(); renderStages(); renderOther(); }
+    function updateKPIs() {
+      const sym = currencySymbols[appData.trip.currency] || '€';
+      const budget = appData.trip.budget || 0;
+      const fixTotal = appData.tickets.reduce((s, t) => s + (parseFloat(t.price) || 0), 0);
+      const fixPaid = appData.tickets.filter(t => t.paid).reduce((s, t) => s + (parseFloat(t.price) || 0), 0);
+      const stageTotal = appData.stages.reduce((s, t) => s + (parseFloat(t.cost) || 0), 0);
+      const otherTotal = appData.otherCosts.reduce((s, t) => s + (parseFloat(t.amount) || 0), 0);
+      const varTotal = stageTotal + otherTotal;
+      const total = fixTotal + varTotal;
+      const available = budget - total;
+      const pct = budget > 0 ? Math.round((total / budget) * 100) : 0;
+
+      document.getElementById('kpiBudget').textContent = fmt(budget, sym);
+      document.getElementById('kpiAvailable').textContent = fmt(available, sym);
+      document.getElementById('kpiAvailable').className = 'kpi-value' + (available < 0 ? ' text-danger' : '');
+      document.getElementById('kpiFixed').textContent = fmt(fixTotal, sym);
+      document.getElementById('kpiFixedSub').textContent = `bezahlt: ${fmt(fixPaid, sym)}`;
+      document.getElementById('kpiVar').textContent = fmt(varTotal, sym);
+      document.getElementById('kpiVarSub').textContent = `Etappen ${fmt(stageTotal, sym)} · Sonstiges ${fmt(otherTotal, sym)}`;
+
+      const prog = document.getElementById('budgetProgress');
+      prog.style.width = Math.min(pct, 100) + '%';
+      prog.className = 'progress-fill' + (pct > 100 ? ' danger' : pct > 80 ? ' warning' : '');
+      document.getElementById('budgetPercent').textContent = `${pct}% verbraucht`;
+    }
+    function fmt(n, sym = '€') { return `${sym}${(n || 0).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`; }
+    function fmtDate(d) { return d ? new Date(d).toLocaleDateString('de-DE') : ''; }
+    function esc(t) { if (!t) return ''; const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+
+    // ==================== Cards ====================
+    function toggleCard(id) { document.getElementById(id).classList.toggle('collapsed'); }
+
+    // ==================== Modals ====================
+    function openModal(id) { document.getElementById(id).classList.add('active'); document.body.style.overflow = 'hidden'; }
+    function closeModal(id) { document.getElementById(id).classList.remove('active'); document.body.style.overflow = ''; resetModal(id); }
+    function resetModal(id) {
+      const m = document.getElementById(id);
+      m.querySelectorAll('input,textarea').forEach(el => { if (el.type === 'checkbox') el.checked = false; else if (!el.value || el.type !== 'number') el.value = ''; });
+      m.querySelectorAll('select').forEach(el => el.selectedIndex = 0);
+      if (id === 'stageModal') { selectMode('auto'); document.getElementById('stageCalcCost').textContent = '€0,00'; }
+      editingTicketIndex = editingStageIndex = editingOtherIndex = null;
+    }
+
+    // ==================== Tickets ====================
+    function openTicketModal(i = null) {
+      editingTicketIndex = i;
+      if (i !== null) {
+        const t = appData.tickets[i];
+        document.getElementById('ticketType').value = t.type;
+        document.getElementById('ticketDesc').value = t.description;
+        document.getElementById('ticketDate').value = t.date;
+        document.getElementById('ticketPrice').value = t.price;
+        document.getElementById('ticketPaid').checked = t.paid;
+        document.getElementById('ticketNote').value = t.note || '';
+      }
+      openModal('ticketModal');
+    }
+    function saveTicket() {
+      const t = {
+        type: document.getElementById('ticketType').value,
+        description: document.getElementById('ticketDesc').value,
+        date: document.getElementById('ticketDate').value,
+        price: parseFloat(document.getElementById('ticketPrice').value) || 0,
+        paid: document.getElementById('ticketPaid').checked,
+        note: document.getElementById('ticketNote').value
+      };
+      if (!t.description) { alert('Bitte Beschreibung eingeben'); return; }
+      if (editingTicketIndex !== null) appData.tickets[editingTicketIndex] = t; else appData.tickets.push(t);
+      closeModal('ticketModal'); saveData();
+    }
+    function deleteTicket(i) { if (confirm('Löschen?')) { appData.tickets.splice(i, 1); saveData(); } }
+    function renderTickets() {
+      const list = document.getElementById('ticketList'), empty = document.getElementById('ticketEmpty');
+      const sym = currencySymbols[appData.trip.currency] || '€';
+      if (!appData.tickets.length) { list.innerHTML = ''; empty.classList.remove('hidden'); return; }
+      empty.classList.add('hidden');
+      list.innerHTML = appData.tickets.map((t, i) => `
+        <div class="entry-item ${t.paid ? 'paid' : ''}">
+          <div class="entry-header"><span class="entry-type">${t.type}</span><span class="entry-price">${fmt(t.price, sym)}</span></div>
+          <div class="entry-desc">${esc(t.description)}</div>
+          <div class="entry-meta">${t.date ? fmtDate(t.date) : ''} ${t.paid ? '✅ Bezahlt' : '⏳ Offen'}${t.note ? ' · ' + esc(t.note) : ''}</div>
+          <div class="entry-actions"><button class="btn btn-sm btn-ghost" onclick="openTicketModal(${i})">✏️ Bearbeiten</button><button class="btn btn-sm btn-danger" onclick="deleteTicket(${i})">🗑️</button></div>
+        </div>`).join('');
+    }
+
+    // ==================== Stages ====================
+    function openStageModal(i = null) {
+      editingStageIndex = i;
+      if (i !== null) {
+        const s = appData.stages[i];
+        document.getElementById('stageFrom').value = s.from;
+        document.getElementById('stageTo').value = s.to;
+        document.getElementById('stageDate').value = s.date;
+        document.getElementById('stageNote').value = s.note || '';
+        selectMode(s.mode);
+        fillStageFields(s);
+        calculateStageCost();
+      }
+      openModal('stageModal');
+    }
+    function fillStageFields(s) {
+      const d = s.data || {};
+      switch(s.mode) {
+        case 'auto': document.getElementById('autoDistance').value = d.distance||''; document.getElementById('autoConsumption').value = d.consumption||7.5; document.getElementById('autoFuelPrice').value = d.fuelPrice||1.75; document.getElementById('autoToll').value = d.toll||''; break;
+        case 'bahn': document.getElementById('bahnTicket').value = d.ticket||''; document.getElementById('bahnReservation').value = d.reservation||''; document.getElementById('bahnZubringer').value = d.zubringer||''; break;
+        case 'taxi': document.getElementById('taxiDistance').value = d.distance||''; document.getElementById('taxiDuration').value = d.duration||''; document.getElementById('taxiBase').value = d.base||3.9; document.getElementById('taxiKm').value = d.km||2.2; document.getElementById('taxiWait').value = d.wait||0.6; break;
+        case 'flug': document.getElementById('flugPrice').value = d.price||''; document.getElementById('flugExtras').value = d.extras||''; break;
+        case 'oepnv': document.getElementById('oepnvPrice').value = d.price||''; break;
+        case 'fahrrad': document.getElementById('fahrradCost').value = d.cost||''; break;
+        case 'fuss': document.getElementById('fussDistance').value = d.distance||''; break;
+      }
+    }
+    function selectMode(m) {
+      currentMode = m;
+      document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === m));
+      document.querySelectorAll('.mode-fields').forEach(el => el.classList.add('hidden'));
+      const map = { auto:'modeAuto', bahn:'modeBahn', taxi:'modeTaxi', flug:'modeFlug', oepnv:'modeOepnv', fahrrad:'modeFahrrad', fuss:'modeFuss' };
+      document.getElementById(map[m]).classList.remove('hidden');
+      calculateStageCost();
+    }
+    function calculateStageCost() {
+      let cost = 0;
+      const sym = currencySymbols[appData.trip.currency] || '€';
+      switch(currentMode) {
+        case 'auto':
+          const dist = parseFloat(document.getElementById('autoDistance').value)||0;
+          const cons = parseFloat(document.getElementById('autoConsumption').value)||7.5;
+          const fuel = parseFloat(document.getElementById('autoFuelPrice').value)||1.75;
+          const toll = parseFloat(document.getElementById('autoToll').value)||0;
+          cost = (dist/100)*cons*fuel + toll; break;
+        case 'bahn': cost = (parseFloat(document.getElementById('bahnTicket').value)||0) + (parseFloat(document.getElementById('bahnReservation').value)||0) + (parseFloat(document.getElementById('bahnZubringer').value)||0); break;
+        case 'taxi':
+          const td = parseFloat(document.getElementById('taxiDistance').value)||0;
+          const tm = parseFloat(document.getElementById('taxiDuration').value)||0;
+          cost = (parseFloat(document.getElementById('taxiBase').value)||3.9) + td*(parseFloat(document.getElementById('taxiKm').value)||2.2) + tm*(parseFloat(document.getElementById('taxiWait').value)||0.6); break;
+        case 'flug': cost = (parseFloat(document.getElementById('flugPrice').value)||0) + (parseFloat(document.getElementById('flugExtras').value)||0); break;
+        case 'oepnv': cost = parseFloat(document.getElementById('oepnvPrice').value)||0; break;
+        case 'fahrrad': cost = parseFloat(document.getElementById('fahrradCost').value)||0; break;
+        case 'fuss': cost = 0; break;
+      }
+      document.getElementById('stageCalcCost').textContent = fmt(cost, sym);
+      return cost;
+    }
+    function getStageData() {
+      switch(currentMode) {
+        case 'auto': return { distance: parseFloat(document.getElementById('autoDistance').value)||0, consumption: parseFloat(document.getElementById('autoConsumption').value)||7.5, fuelPrice: parseFloat(document.getElementById('autoFuelPrice').value)||1.75, toll: parseFloat(document.getElementById('autoToll').value)||0 };
+        case 'bahn': return { ticket: parseFloat(document.getElementById('bahnTicket').value)||0, reservation: parseFloat(document.getElementById('bahnReservation').value)||0, zubringer: parseFloat(document.getElementById('bahnZubringer').value)||0 };
+        case 'taxi': return { distance: parseFloat(document.getElementById('taxiDistance').value)||0, duration: parseFloat(document.getElementById('taxiDuration').value)||0, base: parseFloat(document.getElementById('taxiBase').value)||3.9, km: parseFloat(document.getElementById('taxiKm').value)||2.2, wait: parseFloat(document.getElementById('taxiWait').value)||0.6 };
+        case 'flug': return { price: parseFloat(document.getElementById('flugPrice').value)||0, extras: parseFloat(document.getElementById('flugExtras').value)||0 };
+        case 'oepnv': return { price: parseFloat(document.getElementById('oepnvPrice').value)||0 };
+        case 'fahrrad': return { cost: parseFloat(document.getElementById('fahrradCost').value)||0 };
+        case 'fuss': return { distance: parseFloat(document.getElementById('fussDistance').value)||0 };
+        default: return {};
+      }
+    }
+    function saveStage() {
+      const from = document.getElementById('stageFrom').value, to = document.getElementById('stageTo').value;
+      if (!from || !to) { alert('Bitte Start und Ziel eingeben'); return; }
+      const s = { mode: currentMode, from, to, date: document.getElementById('stageDate').value, note: document.getElementById('stageNote').value, cost: calculateStageCost(), data: getStageData() };
+      if (editingStageIndex !== null) appData.stages[editingStageIndex] = s; else appData.stages.push(s);
+      closeModal('stageModal'); saveData();
+    }
+    function deleteStage(i) { if (confirm('Löschen?')) { appData.stages.splice(i, 1); saveData(); } }
+    function renderStages() {
+      const list = document.getElementById('stageList'), empty = document.getElementById('stageEmpty');
+      const sym = currencySymbols[appData.trip.currency] || '€';
+      const icons = { auto:'🚗', bahn:'🚆', taxi:'🚕', flug:'✈️', oepnv:'🚌', fahrrad:'🚲', fuss:'🚶' };
+      const names = { auto:'Auto', bahn:'Bahn', taxi:'Taxi', flug:'Flug', oepnv:'ÖPNV', fahrrad:'Fahrrad', fuss:'Fuß' };
+      if (!appData.stages.length) { list.innerHTML = ''; empty.classList.remove('hidden'); return; }
+      empty.classList.add('hidden');
+      list.innerHTML = appData.stages.map((s, i) => `
+        <div class="entry-item">
+          <div class="entry-header"><span class="entry-type">${icons[s.mode]} ${names[s.mode]}</span><span class="entry-price">${fmt(s.cost, sym)}</span></div>
+          <div class="entry-desc">${esc(s.from)} → ${esc(s.to)}</div>
+          <div class="entry-meta">${s.date ? fmtDate(s.date) : ''}${s.note ? ' · ' + esc(s.note) : ''}</div>
+          <div class="entry-actions"><button class="btn btn-sm btn-ghost" onclick="openStageModal(${i})">✏️ Bearbeiten</button><button class="btn btn-sm btn-danger" onclick="deleteStage(${i})">🗑️</button></div>
+        </div>`).join('');
+    }
+
+    // ==================== Other Costs ====================
+    function openOtherModal(i = null) {
+      editingOtherIndex = i;
+      if (i !== null) {
+        const o = appData.otherCosts[i];
+        document.getElementById('otherCategory').value = o.category;
+        document.getElementById('otherDesc').value = o.description;
+        document.getElementById('otherDate').value = o.date;
+        document.getElementById('otherAmount').value = o.amount;
+        document.getElementById('otherNote').value = o.note || '';
+      }
+      openModal('otherModal');
+    }
+    function saveOther() {
+      const o = { category: document.getElementById('otherCategory').value, description: document.getElementById('otherDesc').value, date: document.getElementById('otherDate').value, amount: parseFloat(document.getElementById('otherAmount').value)||0, note: document.getElementById('otherNote').value };
+      if (!o.description) { alert('Bitte Beschreibung eingeben'); return; }
+      if (editingOtherIndex !== null) appData.otherCosts[editingOtherIndex] = o; else appData.otherCosts.push(o);
+      closeModal('otherModal'); saveData();
+    }
+    function deleteOther(i) { if (confirm('Löschen?')) { appData.otherCosts.splice(i, 1); saveData(); } }
+    function renderOther() {
+      const list = document.getElementById('otherList'), empty = document.getElementById('otherEmpty');
+      const sym = currencySymbols[appData.trip.currency] || '€';
+      const icons = { Verpflegung:'🍽️', Parken:'🅿️', Souvenir:'🎁', ÖPNV:'🚌', Sonstiges:'📦' };
+      if (!appData.otherCosts.length) { list.innerHTML = ''; empty.classList.remove('hidden'); return; }
+      empty.classList.add('hidden');
+      list.innerHTML = appData.otherCosts.map((o, i) => `
+        <div class="entry-item">
+          <div class="entry-header"><span class="entry-type">${icons[o.category]||'📦'} ${o.category}</span><span class="entry-price">${fmt(o.amount, sym)}</span></div>
+          <div class="entry-desc">${esc(o.description)}</div>
+          <div class="entry-meta">${o.date ? fmtDate(o.date) : ''}${o.note ? ' · ' + esc(o.note) : ''}</div>
+          <div class="entry-actions"><button class="btn btn-sm btn-ghost" onclick="openOtherModal(${i})">✏️ Bearbeiten</button><button class="btn btn-sm btn-danger" onclick="deleteOther(${i})">🗑️</button></div>
+        </div>`).join('');
+    }
   </script>
 </body>
 </html>
