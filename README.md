@@ -8,7 +8,7 @@
 
 <p align="center">
   <a href="https://timintech.github.io/reiseplaner/">
-    <img src="assets/screenshots/Reiseplaner.jpeg" alt="Reiseplaner Screenshot" width="400">
+    <img src="assets/screenshots/Reiseplaner.png" alt="Reiseplaner Screenshot" width="400">
   </a>
 </p>
 
