@@ -8,7 +8,7 @@
 
 <p align="center">
   <a href="https://timintech.github.io/reiseplaner/">
-    <img src="assets/screenshots/Reiseplaner.jpeg" alt="Reiseplaner Screenshot" width="100%">
+    <img src="assets/screenshots/Reiseplaner.png" alt="Reiseplaner Screenshot" width="400">
   </a>
 </p>
 
@@ -51,14 +51,11 @@
 ### Option 2: Lokal ausführen
 
 ```bash
-# Repository klonen
 git clone https://github.com/TimInTech/reiseplaner.git
 cd reiseplaner
-
-# Im Browser öffnen
-# Windows: start index.html
-# macOS:   open index.html
-# Linux:   xdg-open index.html
+start index.html   # Windows
+open index.html    # macOS
+xdg-open index.html # Linux
 ```
 
 > 💡 **Keine Installation nötig!** Eine einzelne HTML-Datei ohne Abhängigkeiten.
@@ -71,7 +68,7 @@ cd reiseplaner
 ![CSS3](https://img.shields.io/badge/CSS3-1572B6?logo=css3&logoColor=white)
 ![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-F7DF1E?logo=javascript&logoColor=black)
 
-- **Single-File App** – Alles in einer HTML-Datei
+- **Single-File App** – Alles in einer HTML-Datei (~20KB)
 - **Vanilla JS** – Keine Frameworks, keine Build-Tools
 - **LocalStorage** – Persistente Speicherung im Browser
 - **Offline-fähig** – Funktioniert ohne Internet
@@ -96,20 +93,8 @@ Siehe [CHANGELOG.md](CHANGELOG.md) für alle Änderungen.
 **v2.0.0** (Dezember 2024)
 - Mobile-First Redesign
 - Touch-optimierte Bedienung
-- 7 Transportmodi
+- 7 Transportmodi mit Auto-Berechnung
 - Verbessertes KPI-Dashboard
-
----
-
-## 🤝 Beitragen
-
-Beiträge willkommen! Siehe [CONTRIBUTING.md](CONTRIBUTING.md).
-
-```bash
-git checkout -b feature/mein-feature
-git commit -m "feat: Beschreibung"
-git push origin feature/mein-feature
-```
 
 ---
 
