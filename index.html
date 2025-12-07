@@ -1,18 +1,395 @@
-    // ==================== Data ====================
-    let appData = {
-      trip: { title: '', startDate: '', endDate: '', currency: 'EUR', budget: 0, persons: 1, notes: '' },
-      tickets: [], stages: [], otherCosts: []
-    };
-    const currencySymbols = { 'EUR': '€', 'CHF': 'CHF', 'USD': '$', 'GBP': '£' };
-    let currentMode = 'auto';
-    let editingTicketIndex = null, editingStageIndex = null, editingOtherIndex = null;
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0b1020">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Reiseplaner</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #121935;
+      --muted: #97a0c3;
+      --text: #e7ecff;
+      --brand: #6ea8ff;
+      --brand-2: #8dffb3;
+      --warn: #ffd166;
+      --danger: #ff7b7b;
+      --ok: #6de39a;
+      --card: #161f3f;
+      --input: #0e1530;
+      --border: #25305c;
+      --radius: 12px;
+      --control: 44px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(11,16,32,0.95);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem;
+    }
+    .header-wrap { max-width: 900px; margin: 0 auto; }
+    h1 { font-size: 1.5rem; font-weight: 700; }
+    .sub { color: var(--muted); font-size: 0.875rem; margin-top: 0.25rem; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      background: var(--card);
+      border: 1px solid var(--border);
+      margin-top: 0.75rem;
+    }
+    .badge.saved { border-color: var(--ok); color: var(--ok); }
+    main { max-width: 900px; margin: 0 auto; padding: 1rem; padding-bottom: 100px; }
+    .card {
+      background: linear-gradient(180deg, #141c3b, #0f1632);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      margin-bottom: 1rem;
+      overflow: hidden;
+    }
+    .card-header {
+      padding: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      background: rgba(255,255,255,0.02);
+      border-bottom: 1px solid var(--border);
+    }
+    .card-header:active { background: rgba(255,255,255,0.05); }
+    .card-title { font-size: 1.1rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; }
+    .card-toggle {
+      width: 28px; height: 28px;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--brand); color: var(--bg);
+      border-radius: 8px; font-weight: bold;
+      transition: transform 0.2s;
+    }
+    .card.collapsed .card-toggle { transform: rotate(-90deg); }
+    .card-body { padding: 1rem; }
+    .card.collapsed .card-body { display: none; }
+    .kpis { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin-bottom: 1rem; }
+    .kpi { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 1rem; }
+    .kpi.full { grid-column: 1 / -1; }
+    .kpi-label { color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; }
+    .kpi-value { font-size: 1.5rem; font-weight: 700; margin-top: 0.25rem; }
+    .kpi-value.small { font-size: 1.25rem; }
+    .kpi-sub { color: var(--muted); font-size: 0.75rem; margin-top: 0.25rem; }
+    .progress { height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; margin-top: 0.5rem; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, var(--brand), var(--brand-2)); border-radius: 4px; transition: width 0.3s; }
+    .progress-fill.warning { background: linear-gradient(90deg, var(--warn), #ff9500); }
+    .progress-fill.danger { background: linear-gradient(90deg, var(--danger), #ff5050); }
+    .form-grid { display: grid; grid-template-columns: 1fr; gap: 0.75rem; }
+    .form-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+    .form-group { display: flex; flex-direction: column; gap: 0.375rem; }
+    label { font-size: 0.8rem; color: var(--muted); }
+    input, select, textarea {
+      width: 100%; padding: 0.75rem; font-size: 1rem; font-family: inherit;
+      color: var(--text); background: var(--input);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      min-height: var(--control); -webkit-appearance: none;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none; border-color: var(--brand);
+      box-shadow: 0 0 0 3px rgba(110,168,255,0.2);
+    }
+    select {
+      cursor: pointer;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='none' stroke='%2397a0c3' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.75rem center;
+      background-size: 18px;
+      padding-right: 2.5rem;
+    }
+    textarea { min-height: 80px; resize: vertical; }
+    input[type="checkbox"] { width: 22px; height: 22px; accent-color: var(--ok); cursor: pointer; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+      padding: 0.75rem 1rem; font-size: 0.9rem; font-weight: 600; font-family: inherit;
+      color: var(--text); background: linear-gradient(180deg, #1a2451, #152049);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      cursor: pointer; min-height: var(--control); touch-action: manipulation;
+      transition: filter 0.15s;
+    }
+    .btn:hover { filter: brightness(1.1); }
+    .btn:active { transform: scale(0.98); }
+    .btn-success { background: linear-gradient(180deg, #153c2c, #0e2e22); border-color: #1a5d45; }
+    .btn-danger { background: linear-gradient(180deg, #3c1515, #2e0e0e); border-color: #5d1a1a; }
+    .btn-ghost { background: transparent; }
+    .btn-block { width: 100%; }
+    .btn-sm { padding: 0.5rem 0.75rem; font-size: 0.8rem; min-height: 36px; }
+    .btn-group { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .btn-group .btn { flex: 1; min-width: 0; }
+    .entry-list { display: flex; flex-direction: column; gap: 0.75rem; }
+    .entry-item {
+      background: var(--card); border: 1px solid var(--border);
+      border-left: 4px solid var(--brand); border-radius: var(--radius); padding: 1rem;
+    }
+    .entry-item.paid { border-left-color: var(--ok); }
+    .entry-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem; }
+    .entry-type {
+      font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;
+      color: var(--muted); background: var(--input); padding: 0.25rem 0.5rem; border-radius: 4px;
+    }
+    .entry-price { font-size: 1.25rem; font-weight: 700; color: var(--brand); }
+    .entry-desc { font-weight: 500; margin-bottom: 0.25rem; }
+    .entry-meta { font-size: 0.8rem; color: var(--muted); }
+    .entry-actions { display: flex; gap: 0.5rem; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border); }
+    .entry-actions .btn { flex: 1; }
+    .add-btn {
+      width: 100%; padding: 1rem; border: 2px dashed var(--border); border-radius: var(--radius);
+      background: transparent; color: var(--muted); font-size: 0.9rem; font-weight: 500;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .add-btn:hover { border-color: var(--brand); color: var(--brand); }
+    .empty-state { text-align: center; padding: 2rem 1rem; color: var(--muted); }
+    .empty-icon { font-size: 2.5rem; margin-bottom: 0.5rem; opacity: 0.5; }
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+      display: none; align-items: flex-end; justify-content: center; z-index: 1000;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal {
+      background: var(--panel); width: 100%; max-width: 500px; max-height: 90vh;
+      border-radius: 16px 16px 0 0; overflow: hidden;
+      display: flex; flex-direction: column; animation: slideUp 0.3s ease;
+    }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .modal-header {
+      padding: 1.25rem 1rem; border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .modal-title { font-size: 1.1rem; font-weight: 600; }
+    .modal-close {
+      width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+      background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+      color: var(--muted); cursor: pointer; font-size: 1.25rem;
+    }
+    .modal-body { padding: 1rem; overflow-y: auto; flex: 1; }
+    .modal-footer { padding: 1rem; border-top: 1px solid var(--border); display: flex; gap: 0.75rem; }
+    .modal-footer .btn { flex: 1; }
+    .mode-selector { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin-bottom: 1rem; }
+    .mode-btn {
+      display: flex; flex-direction: column; align-items: center; gap: 0.25rem;
+      padding: 0.75rem 0.5rem; background: var(--card); border: 2px solid var(--border);
+      border-radius: var(--radius); color: var(--muted); font-size: 0.75rem;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .mode-btn:hover { border-color: var(--brand); }
+    .mode-btn.active { background: var(--brand); border-color: var(--brand); color: var(--bg); }
+    .mode-btn span:first-child { font-size: 1.25rem; }
+    .mode-fields { margin-top: 1rem; }
+    .mode-fields.hidden { display: none; }
+    .cost-display {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1rem; text-align: center; margin-top: 1rem;
+    }
+    .cost-label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; }
+    .cost-value { font-size: 1.75rem; font-weight: 700; color: var(--brand-2); margin-top: 0.25rem; }
+    footer { max-width: 900px; margin: 0 auto; padding: 1rem; text-align: center; color: var(--muted); font-size: 0.8rem; }
+    @media (min-width: 640px) {
+      .kpis { grid-template-columns: repeat(4, 1fr); }
+      .mode-selector { grid-template-columns: repeat(7, 1fr); }
+      .modal { border-radius: 16px; margin: auto; max-height: 85vh; }
+      .modal-overlay { align-items: center; padding: 1rem; }
+    }
+    .hidden { display: none !important; }
+    .text-success { color: var(--ok); }
+    .text-warning { color: var(--warn); }
+    .text-danger { color: var(--danger); }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .card { animation: fadeIn 0.3s ease; }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-wrap">
+      <h1>🧳 Reiseplaner</h1>
+      <p class="sub">Budget, Tickets, Etappen & Kostenrechner</p>
+      <div class="badge" id="saveIndicator"><span id="saveStatus">Nicht gespeichert</span></div>
+    </div>
+  </header>
+  <main>
+    <div class="kpis">
+      <div class="kpi"><div class="kpi-label">Budget</div><div class="kpi-value" id="kpiBudget">€0,00</div></div>
+      <div class="kpi"><div class="kpi-label">Verfügbar</div><div class="kpi-value" id="kpiAvailable">€0,00</div></div>
+      <div class="kpi"><div class="kpi-label">Fixkosten</div><div class="kpi-value small" id="kpiFixed">€0,00</div><div class="kpi-sub" id="kpiFixedSub">bezahlt: €0</div></div>
+      <div class="kpi"><div class="kpi-label">Variable</div><div class="kpi-value small" id="kpiVar">€0,00</div><div class="kpi-sub" id="kpiVarSub">Etappen & Sonstiges</div></div>
+      <div class="kpi full"><div class="progress"><div class="progress-fill" id="budgetProgress" style="width: 0%"></div></div><div class="kpi-sub" style="margin-top: 0.5rem" id="budgetPercent">0% verbraucht</div></div>
+    </div>
+    <div class="card" id="cardTrip">
+      <div class="card-header" onclick="toggleCard('cardTrip')"><span class="card-title">📋 Reisedaten</span><span class="card-toggle">›</span></div>
+      <div class="card-body">
+        <div class="form-grid"><div class="form-group"><label for="tripTitle">Titel</label><input type="text" id="tripTitle" placeholder="z.B. Sommerurlaub Italien"></div></div>
+        <div class="form-grid cols-2" style="margin-top: 0.75rem">
+          <div class="form-group"><label for="tripStart">Start</label><input type="date" id="tripStart"></div>
+          <div class="form-group"><label for="tripEnd">Ende</label><input type="date" id="tripEnd"></div>
+          <div class="form-group"><label for="tripCurrency">Währung</label><select id="tripCurrency"><option value="EUR">EUR €</option><option value="CHF">CHF</option><option value="USD">USD $</option><option value="GBP">GBP £</option></select></div>
+          <div class="form-group"><label for="tripBudget">Budget</label><input type="number" id="tripBudget" placeholder="0.00" min="0" step="0.01"></div>
+        </div>
+        <div class="form-grid cols-2" style="margin-top: 0.75rem">
+          <div class="form-group"><label for="tripPersons">Personen</label><input type="number" id="tripPersons" value="1" min="1" max="20"></div>
+          <div class="form-group"><label for="tripNotes">Notizen</label><input type="text" id="tripNotes" placeholder="optional"></div>
+        </div>
+        <button class="btn btn-success btn-block" style="margin-top: 1rem" onclick="saveData()">💾 Speichern</button>
+        <div class="btn-group" style="margin-top: 0.5rem">
+          <button class="btn btn-ghost" onclick="exportData()">📤 Export</button>
+          <button class="btn btn-ghost" onclick="document.getElementById('importFile').click()">📥 Import</button>
+          <input type="file" id="importFile" accept=".json" class="hidden" onchange="importData(event)">
+        </div>
+        <button class="btn btn-danger btn-sm btn-block" style="margin-top: 0.5rem" onclick="resetData()">🗑️ Zurücksetzen</button>
+      </div>
+    </div>
+    <div class="card" id="cardTickets">
+      <div class="card-header" onclick="toggleCard('cardTickets')"><span class="card-title">🎫 Tickets & Fixkosten</span><span class="card-toggle">›</span></div>
+      <div class="card-body">
+        <p style="font-size: 0.8rem; color: var(--muted); margin-bottom: 1rem;">Hotels, Konzerte, Eintritte – alles mit festem Preis.</p>
+        <div class="entry-list" id="ticketList"></div>
+        <div class="empty-state" id="ticketEmpty"><div class="empty-icon">🎫</div><div>Noch keine Tickets</div></div>
+        <button class="add-btn" onclick="openTicketModal()">+ Ticket hinzufügen</button>
+      </div>
+    </div>
+    <div class="card" id="cardStages">
+      <div class="card-header" onclick="toggleCard('cardStages')"><span class="card-title">🗺️ Etappen</span><span class="card-toggle">›</span></div>
+      <div class="card-body">
+        <p style="font-size: 0.8rem; color: var(--muted); margin-bottom: 1rem;">Reiseetappen mit automatischer Kostenberechnung.</p>
+        <div class="entry-list" id="stageList"></div>
+        <div class="empty-state" id="stageEmpty"><div class="empty-icon">🗺️</div><div>Noch keine Etappen</div></div>
+        <button class="add-btn" onclick="openStageModal()">+ Etappe hinzufügen</button>
+      </div>
+    </div>
+    <div class="card" id="cardOther">
+      <div class="card-header" onclick="toggleCard('cardOther')"><span class="card-title">💸 Sonstige Kosten</span><span class="card-toggle">›</span></div>
+      <div class="card-body">
+        <p style="font-size: 0.8rem; color: var(--muted); margin-bottom: 1rem;">Verpflegung, Souvenirs, Parken etc.</p>
+        <div class="entry-list" id="otherList"></div>
+        <div class="empty-state" id="otherEmpty"><div class="empty-icon">💸</div><div>Keine sonstigen Kosten</div></div>
+        <button class="add-btn" onclick="openOtherModal()">+ Kosten hinzufügen</button>
+      </div>
+    </div>
+  </main>
+  <footer><p>Alle Daten werden lokal im Browser gespeichert.</p><p>© 2025 Reiseplaner · MIT License</p></footer>
 
-    // ==================== Init ====================
-    document.addEventListener('DOMContentLoaded', () => {
-      loadData();
-      setupListeners();
-      updateUI();
-    });
+  <div class="modal-overlay" id="ticketModal">
+    <div class="modal">
+      <div class="modal-header"><span class="modal-title">🎫 Ticket / Fixkosten</span><button class="modal-close" onclick="closeModal('ticketModal')">✕</button></div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-group"><label>Art</label><select id="ticketType"><option value="Hotel">🏨 Hotel</option><option value="Ticket">🎫 Ticket</option><option value="Bahn">🚆 Bahn</option><option value="Flug">✈️ Flug</option><option value="Sonstiges">📦 Sonstiges</option></select></div>
+          <div class="form-group"><label>Beschreibung</label><input type="text" id="ticketDesc" placeholder="z.B. Hotel 3 Nächte"></div>
+        </div>
+        <div class="form-grid cols-2" style="margin-top: 0.75rem">
+          <div class="form-group"><label>Datum</label><input type="date" id="ticketDate"></div>
+          <div class="form-group"><label>Preis</label><input type="number" id="ticketPrice" placeholder="0.00" min="0" step="0.01"></div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.75rem; margin: 1rem 0; cursor: pointer" onclick="document.getElementById('ticketPaid').click()">
+          <input type="checkbox" id="ticketPaid"><label for="ticketPaid" style="cursor: pointer; color: var(--text)">Bereits bezahlt</label>
+        </div>
+        <div class="form-group"><label>Notiz (optional)</label><input type="text" id="ticketNote" placeholder="Zusätzliche Infos"></div>
+      </div>
+      <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('ticketModal')">Abbrechen</button><button class="btn btn-success" onclick="saveTicket()">Speichern</button></div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="stageModal">
+    <div class="modal">
+      <div class="modal-header"><span class="modal-title">🗺️ Etappe</span><button class="modal-close" onclick="closeModal('stageModal')">✕</button></div>
+      <div class="modal-body">
+        <div class="mode-selector">
+          <button type="button" class="mode-btn active" data-mode="auto" onclick="selectMode('auto')"><span>🚗</span><span>Auto</span></button>
+          <button type="button" class="mode-btn" data-mode="bahn" onclick="selectMode('bahn')"><span>🚆</span><span>Bahn</span></button>
+          <button type="button" class="mode-btn" data-mode="taxi" onclick="selectMode('taxi')"><span>🚕</span><span>Taxi</span></button>
+          <button type="button" class="mode-btn" data-mode="flug" onclick="selectMode('flug')"><span>✈️</span><span>Flug</span></button>
+          <button type="button" class="mode-btn" data-mode="oepnv" onclick="selectMode('oepnv')"><span>🚌</span><span>ÖPNV</span></button>
+          <button type="button" class="mode-btn" data-mode="fahrrad" onclick="selectMode('fahrrad')"><span>🚲</span><span>Rad</span></button>
+          <button type="button" class="mode-btn" data-mode="fuss" onclick="selectMode('fuss')"><span>🚶</span><span>Fuß</span></button>
+        </div>
+        <div class="form-grid cols-2">
+          <div class="form-group"><label>Von</label><input type="text" id="stageFrom" placeholder="Startort"></div>
+          <div class="form-group"><label>Nach</label><input type="text" id="stageTo" placeholder="Zielort"></div>
+        </div>
+        <div class="form-group" style="margin-top: 0.75rem"><label>Datum</label><input type="date" id="stageDate"></div>
+        <div id="modeAuto" class="mode-fields">
+          <div class="form-grid cols-2">
+            <div class="form-group"><label>Distanz (km)</label><input type="number" id="autoDistance" placeholder="0" min="0"></div>
+            <div class="form-group"><label>Verbrauch (l/100km)</label><input type="number" id="autoConsumption" value="7.5" min="0" step="0.1"></div>
+            <div class="form-group"><label>Kraftstoffpreis (€/l)</label><input type="number" id="autoFuelPrice" value="1.75" min="0" step="0.01"></div>
+            <div class="form-group"><label>Maut/Parken (€)</label><input type="number" id="autoToll" placeholder="0" min="0" step="0.01"></div>
+          </div>
+        </div>
+        <div id="modeBahn" class="mode-fields hidden">
+          <div class="form-grid cols-2">
+            <div class="form-group"><label>Ticketpreis (€)</label><input type="number" id="bahnTicket" placeholder="0" min="0" step="0.01"></div>
+            <div class="form-group"><label>Reservierung (€)</label><input type="number" id="bahnReservation" placeholder="0" min="0" step="0.01"></div>
+          </div>
+          <div class="form-group" style="margin-top: 0.75rem"><label>ÖPNV-Zubringer (€)</label><input type="number" id="bahnZubringer" placeholder="0" min="0" step="0.01"></div>
+        </div>
+        <div id="modeTaxi" class="mode-fields hidden">
+          <div class="form-grid cols-2">
+            <div class="form-group"><label>Distanz (km)</label><input type="number" id="taxiDistance" placeholder="0" min="0"></div>
+            <div class="form-group"><label>Dauer (min)</label><input type="number" id="taxiDuration" placeholder="0" min="0"></div>
+            <div class="form-group"><label>Grundpreis (€)</label><input type="number" id="taxiBase" value="3.90" min="0" step="0.01"></div>
+            <div class="form-group"><label>€/km</label><input type="number" id="taxiKm" value="2.20" min="0" step="0.01"></div>
+          </div>
+          <div class="form-group" style="margin-top: 0.75rem"><label>Wartezeit €/min</label><input type="number" id="taxiWait" value="0.60" min="0" step="0.01"></div>
+        </div>
+        <div id="modeFlug" class="mode-fields hidden">
+          <div class="form-grid cols-2">
+            <div class="form-group"><label>Flugpreis (€)</label><input type="number" id="flugPrice" placeholder="0" min="0" step="0.01"></div>
+            <div class="form-group"><label>Gepäck/Extras (€)</label><input type="number" id="flugExtras" placeholder="0" min="0" step="0.01"></div>
+          </div>
+        </div>
+        <div id="modeOepnv" class="mode-fields hidden"><div class="form-group"><label>Ticketpreis (€)</label><input type="number" id="oepnvPrice" placeholder="0" min="0" step="0.01"></div></div>
+        <div id="modeFahrrad" class="mode-fields hidden"><div class="form-group"><label>Kosten (€) z.B. Leihgebühr</label><input type="number" id="fahrradCost" placeholder="0" min="0" step="0.01"></div></div>
+        <div id="modeFuss" class="mode-fields hidden"><div class="form-group"><label>Distanz (km)</label><input type="number" id="fussDistance" placeholder="0" min="0" step="0.1"><small style="color: var(--muted); font-size: 0.75rem; margin-top: 0.25rem; display: block;">Kostenlos 🚶</small></div></div>
+        <div class="form-group" style="margin-top: 0.75rem"><label>Notiz (optional)</label><input type="text" id="stageNote" placeholder="Zusätzliche Infos"></div>
+        <div class="cost-display"><div class="cost-label">Berechnete Kosten</div><div class="cost-value" id="stageCalcCost">€0,00</div></div>
+      </div>
+      <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('stageModal')">Abbrechen</button><button class="btn btn-success" onclick="saveStage()">Speichern</button></div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="otherModal">
+    <div class="modal">
+      <div class="modal-header"><span class="modal-title">💸 Sonstige Kosten</span><button class="modal-close" onclick="closeModal('otherModal')">✕</button></div>
+      <div class="modal-body">
+        <div class="form-group"><label>Kategorie</label><select id="otherCategory"><option value="Verpflegung">🍽️ Verpflegung</option><option value="Parken">🅿️ Parken</option><option value="Souvenir">🎁 Souvenir</option><option value="ÖPNV">🚌 ÖPNV</option><option value="Sonstiges">📦 Sonstiges</option></select></div>
+        <div class="form-group" style="margin-top: 0.75rem"><label>Beschreibung</label><input type="text" id="otherDesc" placeholder="z.B. Abendessen"></div>
+        <div class="form-grid cols-2" style="margin-top: 0.75rem">
+          <div class="form-group"><label>Datum</label><input type="date" id="otherDate"></div>
+          <div class="form-group"><label>Betrag</label><input type="number" id="otherAmount" placeholder="0.00" min="0" step="0.01"></div>
+        </div>
+        <div class="form-group" style="margin-top: 0.75rem"><label>Notiz (optional)</label><input type="text" id="otherNote" placeholder="Zusätzliche Infos"></div>
+      </div>
+      <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('otherModal')">Abbrechen</button><button class="btn btn-success" onclick="saveOther()">Speichern</button></div>
+    </div>
+  </div>
+
+  <script>
+    let appData = { trip: { title: '', startDate: '', endDate: '', currency: 'EUR', budget: 0, persons: 1, notes: '' }, tickets: [], stages: [], otherCosts: [] };
+    const currencySymbols = { 'EUR': '€', 'CHF': 'CHF', 'USD': '$', 'GBP': '£' };
+    let currentMode = 'auto', editingTicketIndex = null, editingStageIndex = null, editingOtherIndex = null;
+
+    document.addEventListener('DOMContentLoaded', () => { loadData(); setupListeners(); updateUI(); });
 
     function setupListeners() {
       document.querySelectorAll('.mode-fields input').forEach(el => el.addEventListener('input', calculateStageCost));
@@ -20,16 +397,10 @@
         const el = document.getElementById(id);
         if (el) el.addEventListener('change', () => { updateTripData(); markUnsaved(); });
       });
-      document.querySelectorAll('.modal-overlay').forEach(o => {
-        o.addEventListener('click', e => { if (e.target === o) closeModal(o.id); });
-      });
+      document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('click', e => { if (e.target === o) closeModal(o.id); }));
     }
 
-    // ==================== Storage ====================
-    function loadData() {
-      const saved = localStorage.getItem('reiseplanerData');
-      if (saved) { try { appData = JSON.parse(saved); populateForm(); markSaved(); } catch(e) { console.error(e); } }
-    }
+    function loadData() { const saved = localStorage.getItem('reiseplanerData'); if (saved) { try { appData = JSON.parse(saved); populateForm(); markSaved(); } catch(e) {} } }
     function saveData() { updateTripData(); localStorage.setItem('reiseplanerData', JSON.stringify(appData)); markSaved(); updateUI(); }
     function updateTripData() {
       appData.trip.title = document.getElementById('tripTitle').value;
@@ -52,50 +423,30 @@
     function markSaved() { document.getElementById('saveIndicator').classList.add('saved'); document.getElementById('saveStatus').textContent = 'Gespeichert'; }
     function markUnsaved() { document.getElementById('saveIndicator').classList.remove('saved'); document.getElementById('saveStatus').textContent = 'Nicht gespeichert'; }
 
-    // ==================== Export/Import ====================
     function exportData() {
       updateTripData();
       const blob = new Blob([JSON.stringify(appData, null, 2)], { type: 'application/json' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
       a.download = appData.trip.title ? `reise-${appData.trip.title.toLowerCase().replace(/\s+/g, '-')}.json` : 'reiseplaner.json';
       a.click();
     }
     function importData(e) {
       const file = e.target.files[0]; if (!file) return;
       const reader = new FileReader();
-      reader.onload = ev => {
-        try {
-          const d = JSON.parse(ev.target.result);
-          if (d.trip) { appData = d; populateForm(); saveData(); alert('✅ Import erfolgreich!'); }
-          else alert('❌ Ungültiges Format');
-        } catch { alert('❌ Fehler beim Import'); }
-      };
-      reader.readAsText(file);
-      e.target.value = '';
+      reader.onload = ev => { try { const d = JSON.parse(ev.target.result); if (d.trip) { appData = d; populateForm(); saveData(); alert('✅ Import erfolgreich!'); } else alert('❌ Ungültiges Format'); } catch { alert('❌ Fehler'); } };
+      reader.readAsText(file); e.target.value = '';
     }
-    function resetData() {
-      if (confirm('⚠️ Alle Daten löschen?')) {
-        localStorage.removeItem('reiseplanerData');
-        appData = { trip: { title: '', startDate: '', endDate: '', currency: 'EUR', budget: 0, persons: 1, notes: '' }, tickets: [], stages: [], otherCosts: [] };
-        populateForm(); updateUI(); markUnsaved();
-      }
-    }
+    function resetData() { if (confirm('⚠️ Alle Daten löschen?')) { localStorage.removeItem('reiseplanerData'); appData = { trip: { title: '', startDate: '', endDate: '', currency: 'EUR', budget: 0, persons: 1, notes: '' }, tickets: [], stages: [], otherCosts: [] }; populateForm(); updateUI(); markUnsaved(); } }
 
-    // ==================== UI Updates ====================
     function updateUI() { updateKPIs(); renderTickets(); renderStages(); renderOther(); }
     function updateKPIs() {
-      const sym = currencySymbols[appData.trip.currency] || '€';
-      const budget = appData.trip.budget || 0;
+      const sym = currencySymbols[appData.trip.currency] || '€', budget = appData.trip.budget || 0;
       const fixTotal = appData.tickets.reduce((s, t) => s + (parseFloat(t.price) || 0), 0);
       const fixPaid = appData.tickets.filter(t => t.paid).reduce((s, t) => s + (parseFloat(t.price) || 0), 0);
       const stageTotal = appData.stages.reduce((s, t) => s + (parseFloat(t.cost) || 0), 0);
       const otherTotal = appData.otherCosts.reduce((s, t) => s + (parseFloat(t.amount) || 0), 0);
-      const varTotal = stageTotal + otherTotal;
-      const total = fixTotal + varTotal;
-      const available = budget - total;
+      const varTotal = stageTotal + otherTotal, total = fixTotal + varTotal, available = budget - total;
       const pct = budget > 0 ? Math.round((total / budget) * 100) : 0;
-
       document.getElementById('kpiBudget').textContent = fmt(budget, sym);
       document.getElementById('kpiAvailable').textContent = fmt(available, sym);
       document.getElementById('kpiAvailable').className = 'kpi-value' + (available < 0 ? ' text-danger' : '');
@@ -103,7 +454,6 @@
       document.getElementById('kpiFixedSub').textContent = `bezahlt: ${fmt(fixPaid, sym)}`;
       document.getElementById('kpiVar').textContent = fmt(varTotal, sym);
       document.getElementById('kpiVarSub').textContent = `Etappen ${fmt(stageTotal, sym)} · Sonstiges ${fmt(otherTotal, sym)}`;
-
       const prog = document.getElementById('budgetProgress');
       prog.style.width = Math.min(pct, 100) + '%';
       prog.className = 'progress-fill' + (pct > 100 ? ' danger' : pct > 80 ? ' warning' : '');
@@ -113,10 +463,7 @@
     function fmtDate(d) { return d ? new Date(d).toLocaleDateString('de-DE') : ''; }
     function esc(t) { if (!t) return ''; const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
 
-    // ==================== Cards ====================
     function toggleCard(id) { document.getElementById(id).classList.toggle('collapsed'); }
-
-    // ==================== Modals ====================
     function openModal(id) { document.getElementById(id).classList.add('active'); document.body.style.overflow = 'hidden'; }
     function closeModal(id) { document.getElementById(id).classList.remove('active'); document.body.style.overflow = ''; resetModal(id); }
     function resetModal(id) {
@@ -127,176 +474,24 @@
       editingTicketIndex = editingStageIndex = editingOtherIndex = null;
     }
 
-    // ==================== Tickets ====================
-    function openTicketModal(i = null) {
-      editingTicketIndex = i;
-      if (i !== null) {
-        const t = appData.tickets[i];
-        document.getElementById('ticketType').value = t.type;
-        document.getElementById('ticketDesc').value = t.description;
-        document.getElementById('ticketDate').value = t.date;
-        document.getElementById('ticketPrice').value = t.price;
-        document.getElementById('ticketPaid').checked = t.paid;
-        document.getElementById('ticketNote').value = t.note || '';
-      }
-      openModal('ticketModal');
-    }
-    function saveTicket() {
-      const t = {
-        type: document.getElementById('ticketType').value,
-        description: document.getElementById('ticketDesc').value,
-        date: document.getElementById('ticketDate').value,
-        price: parseFloat(document.getElementById('ticketPrice').value) || 0,
-        paid: document.getElementById('ticketPaid').checked,
-        note: document.getElementById('ticketNote').value
-      };
-      if (!t.description) { alert('Bitte Beschreibung eingeben'); return; }
-      if (editingTicketIndex !== null) appData.tickets[editingTicketIndex] = t; else appData.tickets.push(t);
-      closeModal('ticketModal'); saveData();
-    }
+    function openTicketModal(i = null) { editingTicketIndex = i; if (i !== null) { const t = appData.tickets[i]; document.getElementById('ticketType').value = t.type; document.getElementById('ticketDesc').value = t.description; document.getElementById('ticketDate').value = t.date; document.getElementById('ticketPrice').value = t.price; document.getElementById('ticketPaid').checked = t.paid; document.getElementById('ticketNote').value = t.note || ''; } openModal('ticketModal'); }
+    function saveTicket() { const t = { type: document.getElementById('ticketType').value, description: document.getElementById('ticketDesc').value, date: document.getElementById('ticketDate').value, price: parseFloat(document.getElementById('ticketPrice').value) || 0, paid: document.getElementById('ticketPaid').checked, note: document.getElementById('ticketNote').value }; if (!t.description) { alert('Bitte Beschreibung eingeben'); return; } if (editingTicketIndex !== null) appData.tickets[editingTicketIndex] = t; else appData.tickets.push(t); closeModal('ticketModal'); saveData(); }
     function deleteTicket(i) { if (confirm('Löschen?')) { appData.tickets.splice(i, 1); saveData(); } }
-    function renderTickets() {
-      const list = document.getElementById('ticketList'), empty = document.getElementById('ticketEmpty');
-      const sym = currencySymbols[appData.trip.currency] || '€';
-      if (!appData.tickets.length) { list.innerHTML = ''; empty.classList.remove('hidden'); return; }
-      empty.classList.add('hidden');
-      list.innerHTML = appData.tickets.map((t, i) => `
-        <div class="entry-item ${t.paid ? 'paid' : ''}">
-          <div class="entry-header"><span class="entry-type">${t.type}</span><span class="entry-price">${fmt(t.price, sym)}</span></div>
-          <div class="entry-desc">${esc(t.description)}</div>
-          <div class="entry-meta">${t.date ? fmtDate(t.date) : ''} ${t.paid ? '✅ Bezahlt' : '⏳ Offen'}${t.note ? ' · ' + esc(t.note) : ''}</div>
-          <div class="entry-actions"><button class="btn btn-sm btn-ghost" onclick="openTicketModal(${i})">✏️ Bearbeiten</button><button class="btn btn-sm btn-danger" onclick="deleteTicket(${i})">🗑️</button></div>
-        </div>`).join('');
-    }
+    function renderTickets() { const list = document.getElementById('ticketList'), empty = document.getElementById('ticketEmpty'), sym = currencySymbols[appData.trip.currency] || '€'; if (!appData.tickets.length) { list.innerHTML = ''; empty.classList.remove('hidden'); return; } empty.classList.add('hidden'); list.innerHTML = appData.tickets.map((t, i) => `<div class="entry-item ${t.paid ? 'paid' : ''}"><div class="entry-header"><span class="entry-type">${t.type}</span><span class="entry-price">${fmt(t.price, sym)}</span></div><div class="entry-desc">${esc(t.description)}</div><div class="entry-meta">${t.date ? fmtDate(t.date) : ''} ${t.paid ? '✅ Bezahlt' : '⏳ Offen'}${t.note ? ' · ' + esc(t.note) : ''}</div><div class="entry-actions"><button class="btn btn-sm btn-ghost" onclick="openTicketModal(${i})">✏️ Bearbeiten</button><button class="btn btn-sm btn-danger" onclick="deleteTicket(${i})">🗑️</button></div></div>`).join(''); }
 
-    // ==================== Stages ====================
-    function openStageModal(i = null) {
-      editingStageIndex = i;
-      if (i !== null) {
-        const s = appData.stages[i];
-        document.getElementById('stageFrom').value = s.from;
-        document.getElementById('stageTo').value = s.to;
-        document.getElementById('stageDate').value = s.date;
-        document.getElementById('stageNote').value = s.note || '';
-        selectMode(s.mode);
-        fillStageFields(s);
-        calculateStageCost();
-      }
-      openModal('stageModal');
-    }
-    function fillStageFields(s) {
-      const d = s.data || {};
-      switch(s.mode) {
-        case 'auto': document.getElementById('autoDistance').value = d.distance||''; document.getElementById('autoConsumption').value = d.consumption||7.5; document.getElementById('autoFuelPrice').value = d.fuelPrice||1.75; document.getElementById('autoToll').value = d.toll||''; break;
-        case 'bahn': document.getElementById('bahnTicket').value = d.ticket||''; document.getElementById('bahnReservation').value = d.reservation||''; document.getElementById('bahnZubringer').value = d.zubringer||''; break;
-        case 'taxi': document.getElementById('taxiDistance').value = d.distance||''; document.getElementById('taxiDuration').value = d.duration||''; document.getElementById('taxiBase').value = d.base||3.9; document.getElementById('taxiKm').value = d.km||2.2; document.getElementById('taxiWait').value = d.wait||0.6; break;
-        case 'flug': document.getElementById('flugPrice').value = d.price||''; document.getElementById('flugExtras').value = d.extras||''; break;
-        case 'oepnv': document.getElementById('oepnvPrice').value = d.price||''; break;
-        case 'fahrrad': document.getElementById('fahrradCost').value = d.cost||''; break;
-        case 'fuss': document.getElementById('fussDistance').value = d.distance||''; break;
-      }
-    }
-    function selectMode(m) {
-      currentMode = m;
-      document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === m));
-      document.querySelectorAll('.mode-fields').forEach(el => el.classList.add('hidden'));
-      const map = { auto:'modeAuto', bahn:'modeBahn', taxi:'modeTaxi', flug:'modeFlug', oepnv:'modeOepnv', fahrrad:'modeFahrrad', fuss:'modeFuss' };
-      document.getElementById(map[m]).classList.remove('hidden');
-      calculateStageCost();
-    }
-    function calculateStageCost() {
-      let cost = 0;
-      const sym = currencySymbols[appData.trip.currency] || '€';
-      switch(currentMode) {
-        case 'auto':
-          const dist = parseFloat(document.getElementById('autoDistance').value)||0;
-          const cons = parseFloat(document.getElementById('autoConsumption').value)||7.5;
-          const fuel = parseFloat(document.getElementById('autoFuelPrice').value)||1.75;
-          const toll = parseFloat(document.getElementById('autoToll').value)||0;
-          cost = (dist/100)*cons*fuel + toll; break;
-        case 'bahn': cost = (parseFloat(document.getElementById('bahnTicket').value)||0) + (parseFloat(document.getElementById('bahnReservation').value)||0) + (parseFloat(document.getElementById('bahnZubringer').value)||0); break;
-        case 'taxi':
-          const td = parseFloat(document.getElementById('taxiDistance').value)||0;
-          const tm = parseFloat(document.getElementById('taxiDuration').value)||0;
-          cost = (parseFloat(document.getElementById('taxiBase').value)||3.9) + td*(parseFloat(document.getElementById('taxiKm').value)||2.2) + tm*(parseFloat(document.getElementById('taxiWait').value)||0.6); break;
-        case 'flug': cost = (parseFloat(document.getElementById('flugPrice').value)||0) + (parseFloat(document.getElementById('flugExtras').value)||0); break;
-        case 'oepnv': cost = parseFloat(document.getElementById('oepnvPrice').value)||0; break;
-        case 'fahrrad': cost = parseFloat(document.getElementById('fahrradCost').value)||0; break;
-        case 'fuss': cost = 0; break;
-      }
-      document.getElementById('stageCalcCost').textContent = fmt(cost, sym);
-      return cost;
-    }
-    function getStageData() {
-      switch(currentMode) {
-        case 'auto': return { distance: parseFloat(document.getElementById('autoDistance').value)||0, consumption: parseFloat(document.getElementById('autoConsumption').value)||7.5, fuelPrice: parseFloat(document.getElementById('autoFuelPrice').value)||1.75, toll: parseFloat(document.getElementById('autoToll').value)||0 };
-        case 'bahn': return { ticket: parseFloat(document.getElementById('bahnTicket').value)||0, reservation: parseFloat(document.getElementById('bahnReservation').value)||0, zubringer: parseFloat(document.getElementById('bahnZubringer').value)||0 };
-        case 'taxi': return { distance: parseFloat(document.getElementById('taxiDistance').value)||0, duration: parseFloat(document.getElementById('taxiDuration').value)||0, base: parseFloat(document.getElementById('taxiBase').value)||3.9, km: parseFloat(document.getElementById('taxiKm').value)||2.2, wait: parseFloat(document.getElementById('taxiWait').value)||0.6 };
-        case 'flug': return { price: parseFloat(document.getElementById('flugPrice').value)||0, extras: parseFloat(document.getElementById('flugExtras').value)||0 };
-        case 'oepnv': return { price: parseFloat(document.getElementById('oepnvPrice').value)||0 };
-        case 'fahrrad': return { cost: parseFloat(document.getElementById('fahrradCost').value)||0 };
-        case 'fuss': return { distance: parseFloat(document.getElementById('fussDistance').value)||0 };
-        default: return {};
-      }
-    }
-    function saveStage() {
-      const from = document.getElementById('stageFrom').value, to = document.getElementById('stageTo').value;
-      if (!from || !to) { alert('Bitte Start und Ziel eingeben'); return; }
-      const s = { mode: currentMode, from, to, date: document.getElementById('stageDate').value, note: document.getElementById('stageNote').value, cost: calculateStageCost(), data: getStageData() };
-      if (editingStageIndex !== null) appData.stages[editingStageIndex] = s; else appData.stages.push(s);
-      closeModal('stageModal'); saveData();
-    }
+    function openStageModal(i = null) { editingStageIndex = i; if (i !== null) { const s = appData.stages[i]; document.getElementById('stageFrom').value = s.from; document.getElementById('stageTo').value = s.to; document.getElementById('stageDate').value = s.date; document.getElementById('stageNote').value = s.note || ''; selectMode(s.mode); fillStageFields(s); calculateStageCost(); } openModal('stageModal'); }
+    function fillStageFields(s) { const d = s.data || {}; switch(s.mode) { case 'auto': document.getElementById('autoDistance').value = d.distance||''; document.getElementById('autoConsumption').value = d.consumption||7.5; document.getElementById('autoFuelPrice').value = d.fuelPrice||1.75; document.getElementById('autoToll').value = d.toll||''; break; case 'bahn': document.getElementById('bahnTicket').value = d.ticket||''; document.getElementById('bahnReservation').value = d.reservation||''; document.getElementById('bahnZubringer').value = d.zubringer||''; break; case 'taxi': document.getElementById('taxiDistance').value = d.distance||''; document.getElementById('taxiDuration').value = d.duration||''; document.getElementById('taxiBase').value = d.base||3.9; document.getElementById('taxiKm').value = d.km||2.2; document.getElementById('taxiWait').value = d.wait||0.6; break; case 'flug': document.getElementById('flugPrice').value = d.price||''; document.getElementById('flugExtras').value = d.extras||''; break; case 'oepnv': document.getElementById('oepnvPrice').value = d.price||''; break; case 'fahrrad': document.getElementById('fahrradCost').value = d.cost||''; break; case 'fuss': document.getElementById('fussDistance').value = d.distance||''; break; } }
+    function selectMode(m) { currentMode = m; document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === m)); document.querySelectorAll('.mode-fields').forEach(el => el.classList.add('hidden')); const map = { auto:'modeAuto', bahn:'modeBahn', taxi:'modeTaxi', flug:'modeFlug', oepnv:'modeOepnv', fahrrad:'modeFahrrad', fuss:'modeFuss' }; document.getElementById(map[m]).classList.remove('hidden'); calculateStageCost(); }
+    function calculateStageCost() { let cost = 0; const sym = currencySymbols[appData.trip.currency] || '€'; switch(currentMode) { case 'auto': const dist = parseFloat(document.getElementById('autoDistance').value)||0, cons = parseFloat(document.getElementById('autoConsumption').value)||7.5, fuel = parseFloat(document.getElementById('autoFuelPrice').value)||1.75, toll = parseFloat(document.getElementById('autoToll').value)||0; cost = (dist/100)*cons*fuel + toll; break; case 'bahn': cost = (parseFloat(document.getElementById('bahnTicket').value)||0) + (parseFloat(document.getElementById('bahnReservation').value)||0) + (parseFloat(document.getElementById('bahnZubringer').value)||0); break; case 'taxi': const td = parseFloat(document.getElementById('taxiDistance').value)||0, tm = parseFloat(document.getElementById('taxiDuration').value)||0; cost = (parseFloat(document.getElementById('taxiBase').value)||3.9) + td*(parseFloat(document.getElementById('taxiKm').value)||2.2) + tm*(parseFloat(document.getElementById('taxiWait').value)||0.6); break; case 'flug': cost = (parseFloat(document.getElementById('flugPrice').value)||0) + (parseFloat(document.getElementById('flugExtras').value)||0); break; case 'oepnv': cost = parseFloat(document.getElementById('oepnvPrice').value)||0; break; case 'fahrrad': cost = parseFloat(document.getElementById('fahrradCost').value)||0; break; case 'fuss': cost = 0; break; } document.getElementById('stageCalcCost').textContent = fmt(cost, sym); return cost; }
+    function getStageData() { switch(currentMode) { case 'auto': return { distance: parseFloat(document.getElementById('autoDistance').value)||0, consumption: parseFloat(document.getElementById('autoConsumption').value)||7.5, fuelPrice: parseFloat(document.getElementById('autoFuelPrice').value)||1.75, toll: parseFloat(document.getElementById('autoToll').value)||0 }; case 'bahn': return { ticket: parseFloat(document.getElementById('bahnTicket').value)||0, reservation: parseFloat(document.getElementById('bahnReservation').value)||0, zubringer: parseFloat(document.getElementById('bahnZubringer').value)||0 }; case 'taxi': return { distance: parseFloat(document.getElementById('taxiDistance').value)||0, duration: parseFloat(document.getElementById('taxiDuration').value)||0, base: parseFloat(document.getElementById('taxiBase').value)||3.9, km: parseFloat(document.getElementById('taxiKm').value)||2.2, wait: parseFloat(document.getElementById('taxiWait').value)||0.6 }; case 'flug': return { price: parseFloat(document.getElementById('flugPrice').value)||0, extras: parseFloat(document.getElementById('flugExtras').value)||0 }; case 'oepnv': return { price: parseFloat(document.getElementById('oepnvPrice').value)||0 }; case 'fahrrad': return { cost: parseFloat(document.getElementById('fahrradCost').value)||0 }; case 'fuss': return { distance: parseFloat(document.getElementById('fussDistance').value)||0 }; default: return {}; } }
+    function saveStage() { const from = document.getElementById('stageFrom').value, to = document.getElementById('stageTo').value; if (!from || !to) { alert('Bitte Start und Ziel eingeben'); return; } const s = { mode: currentMode, from, to, date: document.getElementById('stageDate').value, note: document.getElementById('stageNote').value, cost: calculateStageCost(), data: getStageData() }; if (editingStageIndex !== null) appData.stages[editingStageIndex] = s; else appData.stages.push(s); closeModal('stageModal'); saveData(); }
     function deleteStage(i) { if (confirm('Löschen?')) { appData.stages.splice(i, 1); saveData(); } }
-    function renderStages() {
-      const list = document.getElementById('stageList'), empty = document.getElementById('stageEmpty');
-      const sym = currencySymbols[appData.trip.currency] || '€';
-      const icons = { auto:'🚗', bahn:'🚆', taxi:'🚕', flug:'✈️', oepnv:'🚌', fahrrad:'🚲', fuss:'🚶' };
-      const names = { auto:'Auto', bahn:'Bahn', taxi:'Taxi', flug:'Flug', oepnv:'ÖPNV', fahrrad:'Fahrrad', fuss:'Fuß' };
-      if (!appData.stages.length) { list.innerHTML = ''; empty.classList.remove('hidden'); return; }
-      empty.classList.add('hidden');
-      list.innerHTML = appData.stages.map((s, i) => `
-        <div class="entry-item">
-          <div class="entry-header"><span class="entry-type">${icons[s.mode]} ${names[s.mode]}</span><span class="entry-price">${fmt(s.cost, sym)}</span></div>
-          <div class="entry-desc">${esc(s.from)} → ${esc(s.to)}</div>
-          <div class="entry-meta">${s.date ? fmtDate(s.date) : ''}${s.note ? ' · ' + esc(s.note) : ''}</div>
-          <div class="entry-actions"><button class="btn btn-sm btn-ghost" onclick="openStageModal(${i})">✏️ Bearbeiten</button><button class="btn btn-sm btn-danger" onclick="deleteStage(${i})">🗑️</button></div>
-        </div>`).join('');
-    }
+    function renderStages() { const list = document.getElementById('stageList'), empty = document.getElementById('stageEmpty'), sym = currencySymbols[appData.trip.currency] || '€'; const icons = { auto:'🚗', bahn:'🚆', taxi:'🚕', flug:'✈️', oepnv:'🚌', fahrrad:'🚲', fuss:'🚶' }, names = { auto:'Auto', bahn:'Bahn', taxi:'Taxi', flug:'Flug', oepnv:'ÖPNV', fahrrad:'Fahrrad', fuss:'Fuß' }; if (!appData.stages.length) { list.innerHTML = ''; empty.classList.remove('hidden'); return; } empty.classList.add('hidden'); list.innerHTML = appData.stages.map((s, i) => `<div class="entry-item"><div class="entry-header"><span class="entry-type">${icons[s.mode]} ${names[s.mode]}</span><span class="entry-price">${fmt(s.cost, sym)}</span></div><div class="entry-desc">${esc(s.from)} → ${esc(s.to)}</div><div class="entry-meta">${s.date ? fmtDate(s.date) : ''}${s.note ? ' · ' + esc(s.note) : ''}</div><div class="entry-actions"><button class="btn btn-sm btn-ghost" onclick="openStageModal(${i})">✏️ Bearbeiten</button><button class="btn btn-sm btn-danger" onclick="deleteStage(${i})">🗑️</button></div></div>`).join(''); }
 
-    // ==================== Other Costs ====================
-    function openOtherModal(i = null) {
-      editingOtherIndex = i;
-      if (i !== null) {
-        const o = appData.otherCosts[i];
-        document.getElementById('otherCategory').value = o.category;
-        document.getElementById('otherDesc').value = o.description;
-        document.getElementById('otherDate').value = o.date;
-        document.getElementById('otherAmount').value = o.amount;
-        document.getElementById('otherNote').value = o.note || '';
-      }
-      openModal('otherModal');
-    }
-    function saveOther() {
-      const o = { category: document.getElementById('otherCategory').value, description: document.getElementById('otherDesc').value, date: document.getElementById('otherDate').value, amount: parseFloat(document.getElementById('otherAmount').value)||0, note: document.getElementById('otherNote').value };
-      if (!o.description) { alert('Bitte Beschreibung eingeben'); return; }
-      if (editingOtherIndex !== null) appData.otherCosts[editingOtherIndex] = o; else appData.otherCosts.push(o);
-      closeModal('otherModal'); saveData();
-    }
+    function openOtherModal(i = null) { editingOtherIndex = i; if (i !== null) { const o = appData.otherCosts[i]; document.getElementById('otherCategory').value = o.category; document.getElementById('otherDesc').value = o.description; document.getElementById('otherDate').value = o.date; document.getElementById('otherAmount').value = o.amount; document.getElementById('otherNote').value = o.note || ''; } openModal('otherModal'); }
+    function saveOther() { const o = { category: document.getElementById('otherCategory').value, description: document.getElementById('otherDesc').value, date: document.getElementById('otherDate').value, amount: parseFloat(document.getElementById('otherAmount').value)||0, note: document.getElementById('otherNote').value }; if (!o.description) { alert('Bitte Beschreibung eingeben'); return; } if (editingOtherIndex !== null) appData.otherCosts[editingOtherIndex] = o; else appData.otherCosts.push(o); closeModal('otherModal'); saveData(); }
     function deleteOther(i) { if (confirm('Löschen?')) { appData.otherCosts.splice(i, 1); saveData(); } }
-    function renderOther() {
-      const list = document.getElementById('otherList'), empty = document.getElementById('otherEmpty');
-      const sym = currencySymbols[appData.trip.currency] || '€';
-      const icons = { Verpflegung:'🍽️', Parken:'🅿️', Souvenir:'🎁', ÖPNV:'🚌', Sonstiges:'📦' };
-      if (!appData.otherCosts.length) { list.innerHTML = ''; empty.classList.remove('hidden'); return; }
-      empty.classList.add('hidden');
-      list.innerHTML = appData.otherCosts.map((o, i) => `
-        <div class="entry-item">
-          <div class="entry-header"><span class="entry-type">${icons[o.category]||'📦'} ${o.category}</span><span class="entry-price">${fmt(o.amount, sym)}</span></div>
-          <div class="entry-desc">${esc(o.description)}</div>
-          <div class="entry-meta">${o.date ? fmtDate(o.date) : ''}${o.note ? ' · ' + esc(o.note) : ''}</div>
-          <div class="entry-actions"><button class="btn btn-sm btn-ghost" onclick="openOtherModal(${i})">✏️ Bearbeiten</button><button class="btn btn-sm btn-danger" onclick="deleteOther(${i})">🗑️</button></div>
-        </div>`).join('');
-    }
+    function renderOther() { const list = document.getElementById('otherList'), empty = document.getElementById('otherEmpty'), sym = currencySymbols[appData.trip.currency] || '€'; const icons = { Verpflegung:'🍽️', Parken:'🅿️', Souvenir:'🎁', ÖPNV:'🚌', Sonstiges:'📦' }; if (!appData.otherCosts.length) { list.innerHTML = ''; empty.classList.remove('hidden'); return; } empty.classList.add('hidden'); list.innerHTML = appData.otherCosts.map((o, i) => `<div class="entry-item"><div class="entry-header"><span class="entry-type">${icons[o.category]||'📦'} ${o.category}</span><span class="entry-price">${fmt(o.amount, sym)}</span></div><div class="entry-desc">${esc(o.description)}</div><div class="entry-meta">${o.date ? fmtDate(o.date) : ''}${o.note ? ' · ' + esc(o.note) : ''}</div><div class="entry-actions"><button class="btn btn-sm btn-ghost" onclick="openOtherModal(${i})">✏️ Bearbeiten</button><button class="btn btn-sm btn-danger" onclick="deleteOther(${i})">🗑️</button></div></div>`).join(''); }
   </script>
 </body>
 </html>
